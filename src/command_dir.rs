@@ -19,8 +19,8 @@ pub async fn command_dir() -> Result<(), Error> {
 fn walk(device: &Device, parent: &ContentObject, indent: &String) -> Result<(), Error> {
     let new_indent = indent.clone() + "  ";
     device.get_objects(parent, |obj| {
-        let name = device.get_object_name(obj)?;
-        println!("{}>{}<", indent, name);
+        let info = device.get_object_info(obj)?;
+        println!("{}>{}<", indent, info.name);
         walk(device, obj, &new_indent)?;
         Ok(())
     })?;

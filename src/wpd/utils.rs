@@ -12,7 +12,7 @@ static INIT: Once = Once::new();
 
 pub fn init_com() {
     INIT.call_once(|| unsafe {
-        CoInitialize(std::ptr::null_mut());
+        let _ = CoInitialize(std::ptr::null_mut());
     });
 }
 
