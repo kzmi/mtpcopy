@@ -53,36 +53,38 @@ impl Device {
         ContentObject { id: vec![0u16] } // empty string
     }
 
-    pub fn get_objects(&self, parent: &ContentObject) -> Result<Vec<ContentObject>, Error> {
-        let mut enum_object_ids: Option<IEnumPortableDeviceObjectIDs> = None;
+    pub fn get_objects<F>(
+        &self,
+        parent: &ContentObject,
+        mut callback: F,
+    ) -> Result<(), Error>
+    where
+        F: FnMut(&ContentObject) -> Result<(), Error>,
+    {
+        let mut enum_object_ids_receptor: Option<IEnumPortableDeviceObjectIDs> = None;
         self.content
-            .EnumObjects(0, parent.id.as_ptr(), None, &mut enum_object_ids)
+            .EnumObjects(0, parent.id.as_ptr(), None, &mut enum_object_ids_receptor)
             .ok()?;
+        let enum_object_ids = enum_object_ids_receptor.unwrap();
 
-        let enum_interface = enum_object_ids.unwrap();
-
-        let mut objects = Vec::<ContentObject>::new();
+        const ARRAY_SIZE: u32 = 32;
         loop {
             // note that IDStrArrayBuf cannot be reused across iterations
             // because the obtained strings must be freed with its destructor.
-            let mut object_ids = WStrPtrArray::create(32);
+            let mut object_ids = WStrPtrArray::create(ARRAY_SIZE);
             let mut read = 0u32;
-            let err = enum_interface.Next(object_ids.size(), object_ids.as_mut_ptr(), &mut read);
+            let err = enum_object_ids.Next(object_ids.size(), object_ids.as_mut_ptr(), &mut read);
             err.ok()?;
 
-            objects.extend(
-                object_ids
-                    .to_vec(read)
-                    .into_iter()
-                    .map(|id| ContentObject { id }),
-            );
+            for id in object_ids.to_vec(read) {
+                callback(&ContentObject { id })?;
+            }
 
             if err != ErrorCode::S_OK {
                 break;
             }
         }
-
-        Ok(objects)
+        Ok(())
     }
 
     pub fn get_object_name(&self, object: &ContentObject) -> Result<String, Error> {
@@ -131,4 +133,3 @@ impl Drop for Device {
         self.device.Close();
     }
 }
-

@@ -20,12 +20,14 @@ impl Manager {
         Ok(Manager { manager })
     }
 
-    pub fn get_devices(&self) -> Result<Vec<DeviceInfo>, Error> {
+    pub fn get_devices<F>(&self, mut callback: F) -> Result<(), Error>
+    where
+        F: FnMut(&DeviceInfo) -> Result<(), Error>,
+    {
         let device_ids = self.get_device_ids()?;
 
-        let mut devices = Vec::<DeviceInfo>::new();
-
         for mut device_id in device_ids {
+            // get name length
             let mut name_buf_len = 0u32;
             self.manager
                 .GetDeviceFriendlyName(
@@ -35,6 +37,7 @@ impl Manager {
                 )
                 .ok()?;
 
+            // get name
             let mut name_buf = WStrBuf::create(name_buf_len);
             self.manager
                 .GetDeviceFriendlyName(
@@ -46,21 +49,23 @@ impl Manager {
 
             let name = name_buf.to_string(name_buf_len - 1); // exclude null terminator
 
-            devices.push(DeviceInfo {
+            let device_info = DeviceInfo {
                 id: device_id,
                 name,
-            });
+            };
+            callback(&device_info)?
         }
-
-        Ok(devices)
+        Ok(())
     }
 
     fn get_device_ids(&self) -> Result<Vec<IDStr>, Error> {
+        // get number of devices
         let mut device_id_count = 0u32;
         self.manager
             .GetDevices(std::ptr::null_mut(), &mut device_id_count)
             .ok()?;
 
+        // get device ids
         let mut device_ids = WStrPtrArray::create(device_id_count);
         self.manager
             .GetDevices(device_ids.as_mut_ptr(), &mut device_id_count)
