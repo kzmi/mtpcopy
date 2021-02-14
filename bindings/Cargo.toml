@@ -1,0 +1,11 @@
+[package]
+name = "wpd_bindings"
+version = "0.1.0"
+authors = ["Iwasa Kazmi <kzmizzz@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+windows = { git = "https://github.com/microsoft/windows-rs" }
+
+[build-dependencies]
+windows = { git = "https://github.com/microsoft/windows-rs" }

@@ -1,0 +1,11 @@
+use bindings::windows::Error;
+
+mod wpd;
+mod command_dir;
+mod command_list;
+
+fn main() -> Result<(), Error> {
+    futures::executor::block_on(command_list::command_list())?;
+    futures::executor::block_on(command_dir::command_dir())?;
+    Ok(())
+}
