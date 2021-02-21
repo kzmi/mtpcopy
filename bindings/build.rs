@@ -18,5 +18,6 @@ fn main() {
             PortableDeviceManager,
             PortableDeviceValues,
         },
+        windows::win32::structured_storage::{IStream, STGC},
     );
 }

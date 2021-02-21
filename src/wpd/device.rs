@@ -1,8 +1,10 @@
+use bindings::windows::win32::structured_storage::IStream;
 use bindings::windows::win32::windows_portable_devices::{
     IEnumPortableDeviceObjectIDs, IPortableDevice, IPortableDeviceContent,
     IPortableDeviceKeyCollection, IPortableDeviceProperties, IPortableDeviceResources,
     IPortableDeviceValues, PortableDevice, PortableDeviceKeyCollection, PortableDeviceValues,
 };
+use bindings::windows::win32::windows_properties_system::PROPERTYKEY;
 use bindings::windows::Error;
 use bindings::windows::ErrorCode;
 use bindings::windows::Guid;
@@ -12,6 +14,7 @@ use chrono::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use super::guids::*;
 use super::manager::DeviceInfo;
 use super::property_keys::*;
+use super::resource_stream::ResourceReader;
 use super::utils::*;
 
 pub struct ContentObject {
@@ -53,6 +56,10 @@ impl ObjectInfo {
 
     pub fn is_folder(&self) -> bool {
         self.content_type == WPD_CONTENT_TYPE_FOLDER
+    }
+
+    pub fn is_file(&self) -> bool {
+        !self.is_functional_object() && !self.is_folder()
     }
 }
 
@@ -267,6 +274,51 @@ impl Device {
             can_delete,
             time_modified,
         })
+    }
+
+    pub fn get_resource_keys(&self, object: &ContentObject) -> Result<Vec<PROPERTYKEY>, Error> {
+        let mut key_collection_receptor: Option<IPortableDeviceKeyCollection> = None;
+        unsafe {
+            self.resources
+                .GetSupportedResources(object.id.as_ptr(), &mut key_collection_receptor)
+                .ok()?;
+        }
+        let key_collection = key_collection_receptor.unwrap();
+
+        let mut count = 0u32;
+        unsafe {
+            key_collection.GetCount(&mut count).ok()?;
+        }
+
+        let mut property_keys = Vec::<PROPERTYKEY>::new();
+        for i in 0..count as u32 {
+            let mut propkey = make_empty_propertykey();
+            unsafe {
+                key_collection.GetAt(i, &mut propkey).ok()?;
+            }
+            property_keys.push(propkey);
+        }
+
+        Ok(property_keys)
+    }
+
+    pub fn get_resoure(&self, object: &ContentObject) -> Result<ResourceReader, Error> {
+        const STGM_READ: u32 = 0;
+        let mut buff_size = 100000u32;
+        let mut stream_receptor: Option<IStream> = None;
+        unsafe {
+            self.resources
+                .GetStream(
+                    object.id.as_ptr(),
+                    &WPD_RESOURCE_DEFAULT,
+                    STGM_READ,
+                    &mut buff_size,
+                    &mut stream_receptor,
+                )
+                .ok()?;
+        }
+        let stream = stream_receptor.unwrap();
+        Ok(ResourceReader::new(stream, buff_size))
     }
 }
 

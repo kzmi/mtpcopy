@@ -48,9 +48,26 @@ pub static WPD_OBJECT_ISHIDDEN: PROPERTYKEY = define_propertykey(
 pub static WPD_OBJECT_ISSYSTEM: PROPERTYKEY = define_propertykey(
     0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC, 0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C, 10,
 );
+
 pub static WPD_OBJECT_CAN_DELETE: PROPERTYKEY = define_propertykey(
     0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC, 0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C, 26,
 );
+
 pub static WPD_OBJECT_DATE_MODIFIED: PROPERTYKEY = define_propertykey(
     0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC, 0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C, 19,
 );
+
+pub static WPD_RESOURCE_DEFAULT: PROPERTYKEY = define_propertykey(
+    0xE81E79BE, 0x34F0, 0x41BF, 0xB5, 0x3F, 0xF1, 0xA0, 0x6A, 0xE8, 0x78, 0x42, 0,
+);
+
+pub fn make_empty_propertykey() -> PROPERTYKEY {
+    PROPERTYKEY {
+        fmtid: Guid::zeroed(),
+        pid: 0,
+    }
+}
+
+pub unsafe fn copy_propertykey(propertykey: &PROPERTYKEY) -> PROPERTYKEY {
+    core::ptr::read(propertykey)
+}
