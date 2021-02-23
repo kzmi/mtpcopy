@@ -1,6 +1,7 @@
 use bindings::windows::Error;
 
 mod wpd;
+mod glob;
 mod command_dir;
 mod command_list;
 
