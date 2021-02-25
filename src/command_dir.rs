@@ -18,11 +18,12 @@ pub async fn command_dir() -> Result<(), Error> {
 
 fn walk(device: &Device, parent: &ContentObject, indent: &String) -> Result<(), Error> {
     let new_indent = indent.clone() + "  ";
-    device.get_objects(parent, |obj| {
-        let info = device.get_object_info(obj)?;
+    let mut iter = device.get_object_iterator(parent)?;
+    while let Some(obj) = iter.next()? {
+        let info = device.get_object_info(&obj)?;
         println!("{}>{}<", indent, info.name);
-        walk(device, obj, &new_indent)?;
-        Ok(())
-    })?;
+
+        walk(device, &obj, &new_indent)?;
+    }
     Ok(())
 }

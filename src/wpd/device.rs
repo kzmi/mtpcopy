@@ -108,9 +108,7 @@ impl Device {
         ContentObject { id: vec![0u16] } // empty string
     }
 
-    pub fn get_objects<F>(&self, parent: &ContentObject, mut callback: F) -> Result<(), Error>
-    where
-        F: FnMut(&ContentObject) -> Result<(), Error>,
+    pub fn get_object_iterator(&self, parent: &ContentObject) -> Result<ContentObjectIterator, Error>
     {
         let mut enum_object_ids_receptor: Option<IEnumPortableDeviceObjectIDs> = None;
         unsafe {
@@ -120,27 +118,7 @@ impl Device {
         }
         let enum_object_ids = enum_object_ids_receptor.unwrap();
 
-        const ARRAY_SIZE: u32 = 32;
-        loop {
-            // note that IDStrArrayBuf cannot be reused across iterations
-            // because the obtained strings must be freed with its destructor.
-            let mut object_ids = WStrPtrArray::create(ARRAY_SIZE);
-            let mut read = 0u32;
-            let err;
-            unsafe {
-                err = enum_object_ids.Next(object_ids.size(), object_ids.as_mut_ptr(), &mut read);
-            }
-            err.ok()?;
-
-            for id in object_ids.to_vec(read) {
-                callback(&ContentObject { id })?;
-            }
-
-            if err != ErrorCode::S_OK {
-                break;
-            }
-        }
-        Ok(())
+        Ok(ContentObjectIterator::new(enum_object_ids))
     }
 
     pub fn get_object_info(&self, object: &ContentObject) -> Result<ObjectInfo, Error> {
@@ -327,6 +305,59 @@ impl Drop for Device {
         unsafe {
             let _ = self.device.Close();
         }
+    }
+}
+
+pub struct ContentObjectIterator {
+    enum_object_ids: IEnumPortableDeviceObjectIDs,
+    object_ids: Option<Vec<IDStr>>,
+    completed: bool,
+}
+
+impl ContentObjectIterator {
+    fn new(enum_object_ids: IEnumPortableDeviceObjectIDs) -> ContentObjectIterator {
+        ContentObjectIterator {
+            enum_object_ids,
+            object_ids: None,
+            completed: false,
+        }
+    }
+
+    pub fn next(&mut self) -> Result<Option<ContentObject>, Error> {
+        if let Some(object_ids_ref) = self.object_ids.as_mut() {
+            if let Some(id) = object_ids_ref.pop() {
+                return Ok(Some(ContentObject{id}));
+            }
+        }
+
+        if self.completed {
+            return Ok(None);
+        }
+
+        const ARRAY_SIZE: u32 = 32;
+        let mut object_ids = WStrPtrArray::create(ARRAY_SIZE);
+        let mut read = 0u32;
+        let err;
+        unsafe {
+            err = self.enum_object_ids.Next(object_ids.size(), object_ids.as_mut_ptr(), &mut read);
+        }
+        err.ok()?;
+
+        if read == 0 {
+            self.object_ids = None;
+            self.completed = true;
+            return Ok(None);
+        }
+
+        let mut object_ids_vec = object_ids.to_vec(read);
+        object_ids_vec.reverse(); // for moving item out by pop()
+        self.object_ids = Some(object_ids_vec);
+
+        if err != ErrorCode::S_OK {
+            self.completed = true;
+        }
+
+        self.next()
     }
 }
 
