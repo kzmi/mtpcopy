@@ -14,7 +14,7 @@ pub async fn command_dir() -> Result<(), Error> {
     while let Some(device_info) = iter.next()? {
         println!("{}", device_info.name);
         let device = Device::open(&device_info)?;
-        walk(&device, &device.get_root_object(), &String::from(""))?;
+        walk(&device, &device.get_root_object(), &"".to_string())?;
     }
     Ok(())
 }
@@ -23,11 +23,11 @@ fn walk(device: &Device, parent: &ContentObject, indent: &String) -> Result<(), 
     let new_indent = indent.clone() + "  ";
     let mut iter = device.get_object_iterator(parent)?;
     while let Some(obj) = iter.next()? {
-        let info = device.get_object_info(&obj)?;
+        let info = device.get_object_info(obj)?;
         println!("{}>{}<", indent, info.name);
 
         if info.is_file() && info.name == "12 Reach For The Sky.m4a" {
-            let mut resource_reader = device.get_resoure(&obj)?;
+            let mut resource_reader = device.get_resoure(&info.content_object)?;
             let mut file = std::fs::File::create("C:\\Users\\kzmi\\Desktop\\rust\\foo.m4a").unwrap();
             while let Some(chunk) = resource_reader.next()? {
                 let _ = file.write(chunk);
@@ -35,7 +35,7 @@ fn walk(device: &Device, parent: &ContentObject, indent: &String) -> Result<(), 
             return Ok(());
         }
 
-        walk(device, &obj, &new_indent)?;
+        walk(device, &info.content_object, &new_indent)?;
     }
     Ok(())
 }

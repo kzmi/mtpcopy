@@ -21,7 +21,14 @@ pub struct ContentObject {
     id: IDStr,
 }
 
-pub struct ObjectInfo {
+impl Clone for ContentObject {
+    fn clone(&self) -> Self {
+        ContentObject{id: self.id.clone()}
+    }
+}
+
+pub struct ContentObjectInfo {
+    pub content_object: ContentObject,
     /// Name to display
     pub name: String,
     /// Content type GUID
@@ -41,7 +48,23 @@ pub struct ObjectInfo {
     pub time_modified: Option<NaiveDateTime>,
 }
 
-impl ObjectInfo {
+impl Clone for ContentObjectInfo {
+    fn clone(&self) -> Self {
+        ContentObjectInfo{
+            content_object: self.content_object.clone(),
+            name: self.name.clone(),
+            content_type: self.content_type.clone(),
+            functional_object_category: self.functional_object_category.clone(),
+            data_size: self.data_size,
+            is_hidden: self.is_hidden,
+            is_system: self.is_system,
+            can_delete: self.can_delete,
+            time_modified: self.time_modified,
+        }
+    }
+}
+
+impl ContentObjectInfo {
     pub fn is_functional_object(&self) -> bool {
         self.content_type == WPD_CONTENT_TYPE_FUNCTIONAL_OBJECT
     }
@@ -121,7 +144,7 @@ impl Device {
         Ok(ContentObjectIterator::new(enum_object_ids))
     }
 
-    pub fn get_object_info(&self, object: &ContentObject) -> Result<ObjectInfo, Error> {
+    pub fn get_object_info(&self, object: ContentObject) -> Result<ContentObjectInfo, Error> {
         let key_collection: IPortableDeviceKeyCollection =
             co_create_instance(&PortableDeviceKeyCollection)?;
         unsafe {
@@ -242,7 +265,8 @@ impl Device {
 
         let name = object_orig_name.unwrap_or(object_name);
 
-        Ok(ObjectInfo {
+        Ok(ContentObjectInfo {
+            content_object: object,
             name,
             content_type,
             functional_object_category,
