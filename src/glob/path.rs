@@ -57,7 +57,7 @@ pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, Pat
         });
     }
 
-    let pat_str = String::from(pattern);
+    let pat_str = pattern.to_string();
     let components: Vec<&str> = if pat_str == "" {
         Vec::<&str>::new()
     } else {
@@ -98,7 +98,7 @@ pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, Pat
                 }));
             } else {
                 next = Some(Box::new(PathMatcher::ExactNameMatcher {
-                    name: String::from(compo),
+                    name: compo.to_string(),
                     must_be_dir,
                     next,
                 }));
@@ -299,7 +299,7 @@ mod tests {
     #[test_case("aaa" ; "relative path to a file")]
     fn test_create_path_pattern_matcher_exact_name(pattern: &str) {
         let expected = [PathMatcher::ExactNameMatcher {
-            name: String::from("aaa"),
+            name: "aaa".to_string(),
             must_be_dir: false,
             next: None,
         }];
@@ -328,13 +328,13 @@ mod tests {
             PathMatcher::AnyDirectoriesMatcher {
                 next: // this value is not referenced in `assert_path_matchers()`
                     Box::new(PathMatcher::ExactNameMatcher {
-                        name: String::from(expected_filename_pattern),
+                        name: expected_filename_pattern.to_string(),
                         must_be_dir: false,
                         next: None,
                     }),
             },
             PathMatcher::ExactNameMatcher {
-                name: String::from(expected_filename_pattern),
+                name: expected_filename_pattern.to_string(),
                 must_be_dir: false,
                 next: None,
             },
@@ -347,7 +347,7 @@ mod tests {
     fn test_create_path_pattern_matcher_multiple_components() {
         let expected = [
             PathMatcher::ExactNameMatcher {
-                name: String::from("aaa"),
+                name: "aaa".to_string(),
                 must_be_dir: true,
                 next: None,
             },
@@ -359,13 +359,13 @@ mod tests {
             PathMatcher::AnyDirectoriesMatcher {
                 next: // this value is not referenced in `assert_path_matchers()`
                     Box::new(PathMatcher::ExactNameMatcher {
-                        name: String::from("ccc"),
+                        name: "ccc".to_string(),
                         must_be_dir: false,
                         next: None,
                     }),
             },
             PathMatcher::ExactNameMatcher {
-                name: String::from("ccc"),
+                name: "ccc".to_string(),
                 must_be_dir: false,
                 next: None,
             },
