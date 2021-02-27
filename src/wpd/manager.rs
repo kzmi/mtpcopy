@@ -20,49 +20,7 @@ impl Manager {
         Ok(Manager { manager })
     }
 
-    pub fn get_devices<F>(&self, mut callback: F) -> Result<(), Error>
-    where
-        F: FnMut(&DeviceInfo) -> Result<(), Error>,
-    {
-        let device_ids = self.get_device_ids()?;
-
-        for mut device_id in device_ids {
-            // get name length
-            let mut name_buf_len = 0u32;
-            unsafe {
-                self.manager
-                    .GetDeviceFriendlyName(
-                        device_id.as_mut_ptr(),
-                        std::ptr::null_mut(),
-                        &mut name_buf_len as *mut u32,
-                    )
-                    .ok()?;
-            }
-
-            // get name
-            let mut name_buf = WStrBuf::create(name_buf_len);
-            unsafe {
-                self.manager
-                    .GetDeviceFriendlyName(
-                        device_id.as_mut_ptr(),
-                        name_buf.as_mut_ptr(),
-                        &mut name_buf_len as *mut u32,
-                    )
-                    .ok()?;
-            }
-
-            let name = name_buf.to_string(name_buf_len - 1); // exclude null terminator
-
-            let device_info = DeviceInfo {
-                id: device_id,
-                name,
-            };
-            callback(&device_info)?
-        }
-        Ok(())
-    }
-
-    fn get_device_ids(&self) -> Result<Vec<IDStr>, Error> {
+    pub fn get_device_iterator<'a>(&'a self) -> Result<DeviceInfoIterator<'a>, Error> {
         // get number of devices
         let mut device_id_count = 0u32;
         unsafe {
@@ -79,6 +37,62 @@ impl Manager {
                 .ok()?;
         }
 
-        Ok(device_ids.to_vec_all())
+        Ok(DeviceInfoIterator::new(&self.manager, device_ids.to_vec_all()))
+    }
+}
+
+pub struct DeviceInfoIterator<'a> {
+    manager: &'a IPortableDeviceManager,
+    device_ids: Vec<IDStr>,
+}
+
+impl<'a> DeviceInfoIterator<'a> {
+    fn new(
+        manager: &'a IPortableDeviceManager,
+        mut device_ids: Vec<IDStr>,
+    ) -> DeviceInfoIterator<'a> {
+        device_ids.reverse(); // for moving item out by pop()
+        DeviceInfoIterator::<'a> {
+            manager,
+            device_ids,
+        }
+    }
+
+    pub fn next(&mut self) -> Result<Option<DeviceInfo>, Error> {
+        let mut device_id = match self.device_ids.pop() {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+
+        // get name length
+        let mut name_buf_len = 0u32;
+        unsafe {
+            self.manager
+                .GetDeviceFriendlyName(
+                    device_id.as_mut_ptr(),
+                    std::ptr::null_mut(),
+                    &mut name_buf_len as *mut u32,
+                )
+                .ok()?;
+        }
+
+        // get name
+        let mut name_buf = WStrBuf::create(name_buf_len);
+        unsafe {
+            self.manager
+                .GetDeviceFriendlyName(
+                    device_id.as_mut_ptr(),
+                    name_buf.as_mut_ptr(),
+                    &mut name_buf_len as *mut u32,
+                )
+                .ok()?;
+        }
+
+        let name = name_buf.to_string(name_buf_len - 1); // exclude null terminator
+
+        Ok(Some(DeviceInfo {
+            id: device_id,
+            name,
+        }))
     }
 }
