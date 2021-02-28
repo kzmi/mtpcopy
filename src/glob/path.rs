@@ -3,6 +3,8 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
 
+use crate::errors::AppError;
+
 use super::filename::FileNamePattern;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -15,46 +17,14 @@ pub enum PathMatchingState {
     Completed,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum PathMatchingErrorKind {
-    PathPatternIsEmpty,
-    DotIsNotAllowed,
-    DotDotIsNotAllowed,
-    DirWildcardAtEndIsNotAllowed,
-}
-
-#[derive(Debug)]
-pub struct PathMatchingError {
-    kind: PathMatchingErrorKind,
-}
-
-impl Error for PathMatchingError {}
-impl Display for PathMatchingError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match &self.kind {
-                PathMatchingErrorKind::PathPatternIsEmpty => "path is empty.",
-                PathMatchingErrorKind::DotIsNotAllowed => "\".\" in the path is not allowed.",
-                PathMatchingErrorKind::DotDotIsNotAllowed => "\"..\" in the path is not allowed.",
-                PathMatchingErrorKind::DirWildcardAtEndIsNotAllowed =>
-                    "the path ending with \"**\" is not allowed.",
-            }
-        )
-    }
-}
-
 /// Creates linked matchers that match the given path pattern.
 ///
 /// * `pattern` - path pattern.  
 ///     Each component can contain wildcard characters ('*' and '?').  
 ///     `**` matches zero or more any directories.
-pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, PathMatchingError> {
+pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, AppError> {
     if pattern.len() == 0 {
-        return Err(PathMatchingError {
-            kind: PathMatchingErrorKind::PathPatternIsEmpty,
-        });
+        return Err(AppError::new("path is empty."));
     }
 
     let pat_str = pattern.to_string();
@@ -70,21 +40,15 @@ pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, Pat
         if compo == "" {
             continue;
         }
-        if compo == "." {
-            return Err(PathMatchingError {
-                kind: PathMatchingErrorKind::DotIsNotAllowed,
-            });
-        }
-        if compo == ".." {
-            return Err(PathMatchingError {
-                kind: PathMatchingErrorKind::DotDotIsNotAllowed,
-            });
+        if compo == "." || compo == ".." {
+            return Err(AppError::new(format!(
+                "\"{}\" in the path is not allowed.",
+                compo
+            )));
         }
         if compo == "**" {
             if next.is_none() {
-                return Err(PathMatchingError {
-                    kind: PathMatchingErrorKind::DirWildcardAtEndIsNotAllowed,
-                });
+                return Err(AppError::new("the path ending with \"**\" is not allowed."));
             }
             next = Some(Box::new(PathMatcher::AnyDirectoriesMatcher {
                 next: next.unwrap(),
@@ -231,7 +195,7 @@ mod tests {
     use test_case::test_case;
 
     fn assert_path_matchers(
-        result: &Result<RootPathMatcher, PathMatchingError>,
+        result: &Result<RootPathMatcher, AppError>,
         expected: &[PathMatcher],
     ) {
         let root_matcher = result.as_ref().unwrap();
