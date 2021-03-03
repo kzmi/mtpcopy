@@ -1,3 +1,4 @@
+mod command_list;
 mod finders;
 mod glob;
 mod io;
@@ -33,6 +34,7 @@ fn main() {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args = parse_args()?;
     match args.command {
+        Command::ListStorages => command_list::command_list()?,
         _ => {}
     };
     Ok(())

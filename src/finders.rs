@@ -1,12 +1,12 @@
-use super::wpd::device::Device;
-use super::wpd::device::ContentObjectInfo;
-use super::wpd::manager::DeviceInfo;
-use super::wpd::manager::Manager;
+use crate::wpd::device::Device;
+use crate::wpd::device::ContentObjectInfo;
+use crate::wpd::manager::DeviceInfo;
+use crate::wpd::manager::Manager;
 
-use super::glob::filename::FileNamePattern;
-use super::glob::path::create_path_pattern_matcher;
-use super::glob::path::PathMatcher;
-use super::glob::path::PathMatchingState;
+use crate::glob::filename::FileNamePattern;
+use crate::glob::path::create_path_pattern_matcher;
+use crate::glob::path::PathMatcher;
+use crate::glob::path::PathMatchingState;
 
 pub fn find_devices(
     manager: &Manager,
