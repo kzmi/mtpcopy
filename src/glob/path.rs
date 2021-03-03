@@ -1,9 +1,4 @@
-use std::error::Error;
 use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
-
-use crate::errors::AppError;
 
 use super::filename::FileNamePattern;
 
@@ -22,9 +17,11 @@ pub enum PathMatchingState {
 /// * `pattern` - path pattern.  
 ///     Each component can contain wildcard characters ('*' and '?').  
 ///     `**` matches zero or more any directories.
-pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, AppError> {
+pub fn create_path_pattern_matcher(
+    pattern: &str,
+) -> Result<RootPathMatcher, Box<dyn std::error::Error>> {
     if pattern.len() == 0 {
-        return Err(AppError::new("path is empty."));
+        return Err("path is empty.".into());
     }
 
     let pat_str = pattern.to_string();
@@ -41,14 +38,11 @@ pub fn create_path_pattern_matcher(pattern: &str) -> Result<RootPathMatcher, App
             continue;
         }
         if compo == "." || compo == ".." {
-            return Err(AppError::new(format!(
-                "\"{}\" in the path is not allowed.",
-                compo
-            )));
+            return Err(format!("\"{}\" in the path is not allowed.", compo).into());
         }
         if compo == "**" {
             if next.is_none() {
-                return Err(AppError::new("the path ending with \"**\" is not allowed."));
+                return Err("the path ending with \"**\" is not allowed.".into());
             }
             next = Some(Box::new(PathMatcher::AnyDirectoriesMatcher {
                 next: next.unwrap(),
@@ -195,7 +189,7 @@ mod tests {
     use test_case::test_case;
 
     fn assert_path_matchers(
-        result: &Result<RootPathMatcher, AppError>,
+        result: &Result<RootPathMatcher, Box<dyn std::error::Error>>,
         expected: &[PathMatcher],
     ) {
         let root_matcher = result.as_ref().unwrap();
