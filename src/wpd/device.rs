@@ -9,7 +9,10 @@ use bindings::windows::Error;
 use bindings::windows::ErrorCode;
 use bindings::windows::Guid;
 use bindings::windows::BOOL;
-use chrono::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::format::strftime::StrftimeItems;
+use chrono::format::Parsed;
+use chrono::naive::NaiveDateTime;
+use std::sync::Once;
 
 use super::guids::*;
 use super::manager::DeviceInfo;
@@ -397,13 +400,33 @@ impl ContentObjectIterator {
     }
 }
 
+static INIT_PARSING: Once = Once::new();
+static mut DATE_FORMAT_ITEMS: Vec<chrono::format::Item> = Vec::<chrono::format::Item>::new();
+static mut TIME_FORMAT_ITEMS: Vec<chrono::format::Item> = Vec::<chrono::format::Item>::new();
+
 fn parse_datetime(s: &String) -> Option<NaiveDateTime> {
+    INIT_PARSING.call_once(|| unsafe {
+        DATE_FORMAT_ITEMS.clear();
+        DATE_FORMAT_ITEMS.extend(StrftimeItems::new("%Y/%m/%d"));
+        TIME_FORMAT_ITEMS.clear();
+        TIME_FORMAT_ITEMS.extend(StrftimeItems::new("%H:%M:%S%.f"));
+    });
     // YYYY/MM/DD:HH:MM:SS.SSS
     let date_part: String = s.chars().take(10).collect();
-    let date = NaiveDate::parse_from_str(date_part.as_str(), "%Y/%m/%d").ok()?;
+    let mut parsed_date = Parsed::new();
+    chrono::format::parse(&mut parsed_date, date_part.as_str(), unsafe {
+        DATE_FORMAT_ITEMS.iter()
+    })
+    .ok()?;
+    let date = parsed_date.to_naive_date().ok()?;
 
     let time_part: String = s.chars().skip(11).collect();
-    let time = NaiveTime::parse_from_str(time_part.as_str(), "%H:%M:%S%.f").ok()?;
+    let mut parsed_time = Parsed::new();
+    chrono::format::parse(&mut parsed_time, time_part.as_str(), unsafe {
+        TIME_FORMAT_ITEMS.iter()
+    })
+    .ok()?;
+    let time = parsed_date.to_naive_time().ok()?;
 
     Some(NaiveDateTime::new(date, time))
 }
