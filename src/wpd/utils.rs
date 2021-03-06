@@ -49,9 +49,20 @@ impl WStrPtr {
         &mut self.ptr
     }
 
+    pub fn to_idstr(&self) -> IDStr {
+        let len = get_wstr_length(self.ptr.cast());
+        let idstr: IDStr;
+        unsafe {
+            idstr = std::slice::from_raw_parts(self.ptr.cast(), len + 1).to_vec(); // includes null terminator
+        }
+        idstr
+    }
+
     pub fn to_string(&self) -> String {
         let len = get_wstr_length(self.ptr);
-        unsafe { String::from_utf16_lossy(std::slice::from_raw_parts(self.ptr, len)) }
+        unsafe {
+            String::from_utf16_lossy(std::slice::from_raw_parts(self.ptr, len))
+        }
     }
 }
 
@@ -123,8 +134,20 @@ impl WStrBuf {
         WStrBuf { buf }
     }
 
+    pub fn from(s: &str, include_null: bool) -> WStrBuf {
+        let mut buf: Vec<WChar> = s.encode_utf16().collect();
+        if include_null {
+            buf.push(0);
+        }
+        WStrBuf { buf }
+    }
+
     pub fn as_mut_ptr(&mut self) -> *mut WChar {
         self.buf.as_mut_ptr()
+    }
+
+    pub fn as_ptr(&self) -> *const WChar {
+        self.buf.as_ptr()
     }
 
     pub fn to_string(&self, size: u32) -> String {

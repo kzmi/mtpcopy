@@ -1,13 +1,15 @@
 use bindings::windows::win32::structured_storage::IStream;
 use bindings::windows::win32::windows_portable_devices::{
     IEnumPortableDeviceObjectIDs, IPortableDevice, IPortableDeviceContent,
-    IPortableDeviceKeyCollection, IPortableDeviceProperties, IPortableDeviceResources,
-    IPortableDeviceValues, PortableDevice, PortableDeviceKeyCollection, PortableDeviceValues,
+    IPortableDeviceDataStream, IPortableDeviceKeyCollection, IPortableDevicePropVariantCollection,
+    IPortableDeviceProperties, IPortableDeviceResources, IPortableDeviceValues, PortableDevice,
+    PortableDeviceKeyCollection, PortableDevicePropVariantCollection, PortableDeviceValues,
 };
 use bindings::windows::win32::windows_properties_system::PROPERTYKEY;
 use bindings::windows::Error;
 use bindings::windows::ErrorCode;
 use bindings::windows::Guid;
+use bindings::windows::Interface;
 use bindings::windows::BOOL;
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::Parsed;
@@ -17,7 +19,7 @@ use std::sync::Once;
 use super::guids::*;
 use super::manager::DeviceInfo;
 use super::property_keys::*;
-use super::resource_stream::ResourceReader;
+use super::resource_stream::{ResourceReader, ResourceWriter};
 use super::utils::*;
 
 pub struct ContentObject {
@@ -354,6 +356,115 @@ impl Device {
         let stream = stream_receptor.unwrap();
         Ok(ResourceReader::new(stream, buff_size))
     }
+
+    pub fn create_file(
+        &self,
+        parent: &ContentObject,
+        name: &str,
+        created: &Option<NaiveDateTime>,
+        modified: &Option<NaiveDateTime>,
+    ) -> Result<(ContentObject, ResourceWriter), Error> {
+        let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
+        let name_buf = WStrBuf::from(name, true);
+        unsafe {
+            values
+                .SetStringValue(&WPD_OBJECT_PARENT_ID, parent.id.as_ptr())
+                .ok()?;
+            values
+                .SetStringValue(&WPD_OBJECT_NAME, name_buf.as_ptr())
+                .ok()?;
+            values
+                .SetStringValue(&WPD_OBJECT_ORIGINAL_FILE_NAME, name_buf.as_ptr())
+                .ok()?;
+            values
+                .SetGuidValue(&WPD_OBJECT_FORMAT, &WPD_OBJECT_FORMAT_ALL)
+                .ok()?;
+            values
+                .SetGuidValue(&WPD_OBJECT_CONTENT_TYPE, &WPD_CONTENT_TYPE_GENERIC_FILE)
+                .ok()?;
+            values
+                .SetUnsignedLargeIntegerValue(&WPD_OBJECT_SIZE, 0u64)
+                .ok()?;
+        }
+        if let Some(&created_dt) = created.as_ref() {
+            let dt = format_datetime(&created_dt);
+            let dt_buf = WStrBuf::from(&dt, true);
+            unsafe {
+                values
+                    .SetStringValue(&WPD_OBJECT_DATE_CREATED, dt_buf.as_ptr())
+                    .ok()?;
+            }
+        }
+        if let Some(&modified_dt) = modified.as_ref() {
+            let dt = format_datetime(&modified_dt);
+            let dt_buf = WStrBuf::from(&dt, true);
+            unsafe {
+                values
+                    .SetStringValue(&WPD_OBJECT_DATE_MODIFIED, dt_buf.as_ptr())
+                    .ok()?;
+            }
+        }
+
+        let mut stream_receptor: Option<IStream> = None;
+        let mut buffer_size: u32 = 0;
+
+        unsafe {
+            self.content
+                .CreateObjectWithPropertiesAndData(
+                    Some(values),
+                    &mut stream_receptor,
+                    &mut buffer_size,
+                    std::ptr::null_mut(),
+                )
+                .ok()?;
+        }
+
+        let stream = stream_receptor.unwrap();
+
+        let data_stream: IPortableDeviceDataStream = stream.cast()?;
+        let mut object_id = WStrPtr::create();
+        unsafe {
+            data_stream.GetObjectID(object_id.as_mut_ptr()).ok()?;
+        }
+        let content_object = ContentObject::new(object_id.to_idstr());
+
+        let resource_writer = ResourceWriter::new(stream, buffer_size);
+
+        Ok((content_object, resource_writer))
+    }
+
+    pub fn create_folder(
+        &self,
+        parent: &ContentObject,
+        name: &str,
+    ) -> Result<ContentObject, Error> {
+        let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
+        let name_buf = WStrBuf::from(name, true);
+        unsafe {
+            values
+                .SetStringValue(&WPD_OBJECT_PARENT_ID, parent.id.as_ptr())
+                .ok()?;
+            values
+                .SetStringValue(&WPD_OBJECT_NAME, name_buf.as_ptr())
+                .ok()?;
+            values
+                .SetGuidValue(&WPD_OBJECT_FORMAT, &WPD_OBJECT_FORMAT_ALL)
+                .ok()?;
+            values
+                .SetGuidValue(&WPD_OBJECT_CONTENT_TYPE, &WPD_CONTENT_TYPE_FOLDER)
+                .ok()?;
+        }
+
+        let mut object_id = WStrPtr::create();
+        unsafe {
+            self.content
+                .CreateObjectWithPropertiesOnly(Some(values), object_id.as_mut_ptr())
+                .ok()?;
+        }
+        let content_object = ContentObject::new(object_id.to_idstr());
+
+        Ok(content_object)
+    }
 }
 
 impl Drop for Device {
@@ -448,4 +559,17 @@ fn parse_datetime(s: &String) -> Option<NaiveDateTime> {
     let time = parsed_date.to_naive_time().ok()?;
 
     Some(NaiveDateTime::new(date, time))
+}
+
+static INIT_FORMATTING: Once = Once::new();
+static mut DATETIME_FORMAT: Vec<chrono::format::Item> = Vec::<chrono::format::Item>::new();
+
+fn format_datetime(dt: &NaiveDateTime) -> String {
+    INIT_FORMATTING.call_once(|| unsafe {
+        DATETIME_FORMAT.clear();
+        DATETIME_FORMAT.extend(StrftimeItems::new("%Y/%m/%d:%H:%M:%S%.3f"));
+    });
+    // YYYY/MM/DD:HH:MM:SS.SSS
+    dt.format_with_items(unsafe { DATETIME_FORMAT.iter() })
+        .to_string()
 }
