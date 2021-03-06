@@ -21,9 +21,17 @@ pub struct ContentObject {
     id: IDStr,
 }
 
+impl ContentObject {
+    fn new(id: IDStr) -> ContentObject {
+        ContentObject { id }
+    }
+}
+
 impl Clone for ContentObject {
     fn clone(&self) -> Self {
-        ContentObject{id: self.id.clone()}
+        ContentObject {
+            id: self.id.clone(),
+        }
     }
 }
 
@@ -128,11 +136,13 @@ impl Device {
     }
 
     pub fn get_root_object(&self) -> ContentObject {
-        ContentObject { id: vec![0u16] } // empty string
+        ContentObject::new(vec![0u16]) // empty string
     }
 
-    pub fn get_object_iterator(&self, parent: &ContentObject) -> Result<ContentObjectIterator, Error>
-    {
+    pub fn get_object_iterator(
+        &self,
+        parent: &ContentObject,
+    ) -> Result<ContentObjectIterator, Error> {
         let mut enum_object_ids_receptor: Option<IEnumPortableDeviceObjectIDs> = None;
         unsafe {
             self.content
@@ -350,7 +360,7 @@ impl ContentObjectIterator {
     pub fn next(&mut self) -> Result<Option<ContentObject>, Error> {
         if let Some(object_ids_ref) = self.object_ids.as_mut() {
             if let Some(id) = object_ids_ref.pop() {
-                return Ok(Some(ContentObject{id}));
+                return Ok(Some(ContentObject::new(id)));
             }
         }
 
@@ -363,7 +373,9 @@ impl ContentObjectIterator {
         let mut read = 0u32;
         let err;
         unsafe {
-            err = self.enum_object_ids.Next(object_ids.size(), object_ids.as_mut_ptr(), &mut read);
+            err = self
+                .enum_object_ids
+                .Next(object_ids.size(), object_ids.as_mut_ptr(), &mut read);
         }
         err.ok()?;
 
