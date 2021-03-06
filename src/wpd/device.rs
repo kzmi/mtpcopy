@@ -542,21 +542,27 @@ fn parse_datetime(s: &String) -> Option<NaiveDateTime> {
         TIME_FORMAT_ITEMS.extend(StrftimeItems::new("%H:%M:%S%.f"));
     });
     // YYYY/MM/DD:HH:MM:SS.SSS
-    let date_part: String = s.chars().take(10).collect();
-    let mut parsed_date = Parsed::new();
-    chrono::format::parse(&mut parsed_date, date_part.as_str(), unsafe {
-        DATE_FORMAT_ITEMS.iter()
-    })
-    .ok()?;
-    let date = parsed_date.to_naive_date().ok()?;
+    let date;
+    {
+        let date_part: String = s.chars().take(10).collect();
+        let mut parsed_date = Parsed::new();
+        chrono::format::parse(&mut parsed_date, date_part.as_str(), unsafe {
+            DATE_FORMAT_ITEMS.iter()
+        })
+        .ok()?;
+        date = parsed_date.to_naive_date().ok()?;
+    }
 
-    let time_part: String = s.chars().skip(11).collect();
-    let mut parsed_time = Parsed::new();
-    chrono::format::parse(&mut parsed_time, time_part.as_str(), unsafe {
-        TIME_FORMAT_ITEMS.iter()
-    })
-    .ok()?;
-    let time = parsed_date.to_naive_time().ok()?;
+    let time;
+    {
+        let time_part: String = s.chars().skip(11).collect();
+        let mut parsed_time = Parsed::new();
+        chrono::format::parse(&mut parsed_time, time_part.as_str(), unsafe {
+            TIME_FORMAT_ITEMS.iter()
+        })
+        .ok()?;
+        time = parsed_time.to_naive_time().ok()?;
+    }
 
     Some(NaiveDateTime::new(date, time))
 }
