@@ -55,13 +55,15 @@ pub struct ContentObjectInfo {
     pub is_system: bool,
     /// Whether the object can be deleted
     pub can_delete: bool,
+    /// Time created (or None if not provided)
+    pub time_created: Option<NaiveDateTime>,
     /// Time modified (or None if not provided)
     pub time_modified: Option<NaiveDateTime>,
 }
 
 impl Clone for ContentObjectInfo {
     fn clone(&self) -> Self {
-        ContentObjectInfo{
+        ContentObjectInfo {
             content_object: self.content_object.clone(),
             name: self.name.clone(),
             content_type: self.content_type.clone(),
@@ -70,7 +72,8 @@ impl Clone for ContentObjectInfo {
             is_hidden: self.is_hidden,
             is_system: self.is_system,
             can_delete: self.can_delete,
-            time_modified: self.time_modified,
+            time_created: self.time_created.clone(),
+            time_modified: self.time_modified.clone(),
         }
     }
 }
@@ -169,6 +172,7 @@ impl Device {
             key_collection.Add(&WPD_OBJECT_ISHIDDEN).ok()?;
             key_collection.Add(&WPD_OBJECT_ISSYSTEM).ok()?;
             key_collection.Add(&WPD_OBJECT_CAN_DELETE).ok()?;
+            key_collection.Add(&WPD_OBJECT_DATE_CREATED).ok()?;
             key_collection.Add(&WPD_OBJECT_DATE_MODIFIED).ok()?;
         }
 
@@ -205,6 +209,7 @@ impl Device {
         let mut is_hidden = false;
         let mut is_system = false;
         let mut can_delete = true;
+        let mut time_created: Option<NaiveDateTime> = None;
         let mut time_modified: Option<NaiveDateTime> = None;
 
         if content_type == WPD_CONTENT_TYPE_FUNCTIONAL_OBJECT {
@@ -252,6 +257,19 @@ impl Device {
                     .and_then(|| can_delete = can_delete_bool.as_bool());
             }
 
+            // get the time created if it was provided
+            let mut time_created_ptr = WStrPtr::create();
+            unsafe {
+                let _ = values
+                    .GetStringValue(&WPD_OBJECT_DATE_CREATED, time_created_ptr.as_mut_ptr())
+                    .and_then(|| {
+                        let time_created_s = &time_created_ptr.to_string();
+                        time_created = parse_datetime(&time_created_s);
+                        println!("   {:?}", &time_created_s);
+                        println!("   {:?}", &time_created);
+                    });
+            }
+
             // get the time modified if it was provided
             let mut time_modified_ptr = WStrPtr::create();
             unsafe {
@@ -287,6 +305,7 @@ impl Device {
             is_hidden,
             is_system,
             can_delete,
+            time_created,
             time_modified,
         })
     }
