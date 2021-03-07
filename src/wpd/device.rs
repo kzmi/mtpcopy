@@ -267,8 +267,6 @@ impl Device {
                     .and_then(|| {
                         let time_created_s = &time_created_ptr.to_string();
                         time_created = parse_datetime(&time_created_s);
-                        println!("   {:?}", &time_created_s);
-                        println!("   {:?}", &time_created);
                     });
             }
 
@@ -280,8 +278,6 @@ impl Device {
                     .and_then(|| {
                         let time_modified_s = &time_modified_ptr.to_string();
                         time_modified = parse_datetime(&time_modified_s);
-                        println!("   {:?}", &time_modified_s);
-                        println!("   {:?}", &time_modified);
                     });
             }
 
