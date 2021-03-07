@@ -26,24 +26,6 @@ pub fn find_devices(
     return Ok(devices);
 }
 
-pub fn find_device_by_number(
-    manager: &Manager,
-    number: u32,
-) -> Result<Vec<DeviceInfo>, Box<dyn std::error::Error>> {
-    let mut devices = Vec::<DeviceInfo>::new();
-
-    let mut count = 0u32;
-    let mut iter = manager.get_device_iterator()?;
-    while let Some(device_info) = iter.next()? {
-        count += 1;
-        if count == number {
-            devices.push(device_info);
-            break;
-        }
-    }
-    return Ok(devices);
-}
-
 pub fn find_storage_objects(
     device: &Device,
     pattern: Option<&str>,
