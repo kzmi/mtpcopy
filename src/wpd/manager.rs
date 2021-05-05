@@ -1,7 +1,8 @@
-use bindings::windows::win32::windows_portable_devices::{
+use bindings::Windows::Win32::WindowsPortableDevices::{
     IPortableDeviceManager, PortableDeviceManager,
 };
-use bindings::windows::Error;
+use bindings::Windows::Win32::SystemServices::PWSTR;
+use windows::Error;
 
 use super::utils::*;
 
@@ -69,8 +70,8 @@ impl<'a> DeviceInfoIterator<'a> {
         unsafe {
             self.manager
                 .GetDeviceFriendlyName(
-                    device_id.as_mut_ptr(),
-                    std::ptr::null_mut(),
+                    device_id.as_pwstr(),
+                    PWSTR::NULL,
                     &mut name_buf_len as *mut u32,
                 )
                 .ok()?;
@@ -81,8 +82,8 @@ impl<'a> DeviceInfoIterator<'a> {
         unsafe {
             self.manager
                 .GetDeviceFriendlyName(
-                    device_id.as_mut_ptr(),
-                    name_buf.as_mut_ptr(),
+                    device_id.as_pwstr(),
+                    name_buf.as_pwstr(),
                     &mut name_buf_len as *mut u32,
                 )
                 .ok()?;

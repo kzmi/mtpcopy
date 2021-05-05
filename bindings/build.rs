@@ -1,16 +1,18 @@
 fn main() {
     windows::build!(
-        windows::win32::com::{
-            CoInitialize, CoCreateInstance, CoTaskMemFree, CLSCTX,
+        Windows::Win32::Com::{
+                CoInitialize, CoCreateInstance, CoTaskMemFree, CLSCTX,
         },
-        windows::win32::file_system::CreateFileW,
-        windows::win32::file_system::FILE_ACCESS_FLAGS,
-        windows::win32::file_system::FILE_CREATE_FLAGS,
-        windows::win32::file_system::FILE_FLAGS_AND_ATTRIBUTES,
-        windows::win32::file_system::FILE_SHARE_FLAGS,
-        windows::win32::structured_storage::{IStream, STGC},
-        windows::win32::system_services::HANDLE,
-        windows::win32::windows_portable_devices::{
+        Windows::Win32::FileSystem::{
+            CreateFileW,
+            FILE_ACCESS_FLAGS,
+            FILE_CREATION_DISPOSITION,
+            FILE_FLAGS_AND_ATTRIBUTES,
+            FILE_SHARE_MODE,
+        },
+        Windows::Win32::StructuredStorage::{IStream, STGC},
+        Windows::Win32::SystemServices::{BOOL, HANDLE, S_OK, PWSTR},
+        Windows::Win32::WindowsPortableDevices::{
             IEnumPortableDeviceObjectIDs,
             IPortableDevice,
             IPortableDeviceContent,
@@ -27,11 +29,13 @@ fn main() {
             PortableDevicePropVariantCollection,
             PortableDeviceValues,
         },
-        windows::win32::windows_programming::CloseHandle,
-        windows::win32::windows_programming::FILETIME,
-        windows::win32::windows_programming::SetFileTime,
-        windows::win32::windows_programming::SYSTEMTIME,
-        windows::win32::windows_programming::SystemTimeToFileTime,
-        windows::win32::windows_properties_system::PROPERTYKEY,
+        Windows::Win32::WindowsProgramming::{
+            CloseHandle,
+            FILETIME,
+            SetFileTime,
+            SYSTEMTIME,
+            SystemTimeToFileTime,
+        },
+        Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY,
     );
 }

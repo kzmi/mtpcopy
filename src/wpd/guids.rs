@@ -1,4 +1,4 @@
-use bindings::windows::Guid;
+use windows::Guid;
 
 pub static WPD_CONTENT_TYPE_FUNCTIONAL_OBJECT: Guid = Guid::from_values(
     0x99ED0160,

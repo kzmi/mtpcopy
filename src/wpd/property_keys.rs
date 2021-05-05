@@ -1,5 +1,5 @@
-use bindings::windows::win32::windows_properties_system::PROPERTYKEY;
-use bindings::windows::Guid;
+use bindings::Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY;
+use windows::Guid;
 
 const fn define_propertykey(
     l: u32,

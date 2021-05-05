@@ -1,8 +1,7 @@
 use crate::wpd::device::ContentObjectInfo;
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Local, NaiveDateTime};
 use std::{
-    fs::DirEntry,
-    fs::{File, Metadata},
+    fs::Metadata,
     os::windows::prelude::MetadataExt,
 };
 

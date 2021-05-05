@@ -1,5 +1,11 @@
-use bindings::windows::win32::structured_storage::{IStream, STGC};
-use bindings::windows::Error;
+use bindings::Windows::Win32::{
+    StructuredStorage::{IStream, STGC},
+    WindowsPortableDevices::IPortableDeviceDataStream,
+};
+use windows::Interface;
+use windows::Error;
+
+use super::{device::ContentObject, utils::WStrPtr};
 
 pub struct ResourceReader {
     stream: IStream,
@@ -56,7 +62,7 @@ impl ResourceWriter {
             unsafe {
                 self.stream
                     .Write(
-                        data.as_ptr().offset(data_offset as isize) as *mut std::ffi::c_void,
+                        data.as_ptr().offset(data_offset as isize) as *const std::ffi::c_void,
                         write_len as u32,
                         &mut size,
                     )
@@ -67,8 +73,18 @@ impl ResourceWriter {
         Ok(())
     }
 
-    pub fn commit(&mut self) -> Result<(), Error> {
+    pub fn commit(&mut self) -> Result<ContentObject, Error> {
         self.committed = true;
-        unsafe { self.stream.Commit(STGC::STGC_DEFAULT.0 as u32).ok() }
+        unsafe {
+            self.stream.Commit(STGC::STGC_DEFAULT.0 as u32).ok();
+        }
+
+        let data_stream: IPortableDeviceDataStream = self.stream.cast()?;
+
+        let mut object_id = WStrPtr::create();
+        unsafe {
+            data_stream.GetObjectID(object_id.as_pwstr_mut_ptr()).ok()?;
+        }
+        Ok(ContentObject::new(object_id.to_idstr()))
     }
 }

@@ -1,3 +1,4 @@
+mod command_copy;
 mod command_list_files;
 mod command_list_storages;
 mod copy;
@@ -47,7 +48,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             args.verbose,
         )?,
 
-        Command::Copy => {}/*command_copy::command_copy(&args.paths.unwrap())?*/,
+        Command::Copy => command_copy::command_copy(&args.paths.unwrap())?,
         _ => {}
     };
     Ok(())

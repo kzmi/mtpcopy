@@ -1,16 +1,14 @@
-use bindings::windows::win32::structured_storage::IStream;
-use bindings::windows::win32::windows_portable_devices::{
+use bindings::Windows::Win32::StructuredStorage::IStream;
+use bindings::Windows::Win32::WindowsPortableDevices::{
     IEnumPortableDeviceObjectIDs, IPortableDevice, IPortableDeviceContent,
     IPortableDeviceDataStream, IPortableDeviceKeyCollection, IPortableDevicePropVariantCollection,
     IPortableDeviceProperties, IPortableDeviceResources, IPortableDeviceValues, PortableDevice,
     PortableDeviceKeyCollection, PortableDevicePropVariantCollection, PortableDeviceValues,
 };
-use bindings::windows::win32::windows_properties_system::PROPERTYKEY;
-use bindings::windows::Error;
-use bindings::windows::ErrorCode;
-use bindings::windows::Guid;
-use bindings::windows::Interface;
-use bindings::windows::BOOL;
+use bindings::Windows::Win32::SystemServices::{BOOL, S_OK, PWSTR};
+use bindings::Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY;
+use windows::Error;
+use windows::Guid;
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::Parsed;
 use chrono::naive::NaiveDateTime;
@@ -23,11 +21,11 @@ use super::resource_stream::{ResourceReader, ResourceWriter};
 use super::utils::*;
 
 pub struct ContentObject {
-    id: IDStr,
+    pub id: IDStr,
 }
 
 impl ContentObject {
-    fn new(id: IDStr) -> ContentObject {
+    pub fn new(id: IDStr) -> ContentObject {
         ContentObject { id }
     }
 }
@@ -114,7 +112,7 @@ impl Device {
         let device: IPortableDevice = co_create_instance(&PortableDevice)?;
         let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
         unsafe {
-            device.Open(info.id.as_ptr(), Some(values)).ok()?;
+            device.Open(info.id.clone().as_pwstr(), values).ok()?;
         }
 
         let mut content_receptor: Option<IPortableDeviceContent> = None;
@@ -144,7 +142,7 @@ impl Device {
     }
 
     pub fn get_root_object(&self) -> ContentObject {
-        ContentObject::new(vec![0u16]) // empty string
+        ContentObject::new(IDStr::create_empty())
     }
 
     pub fn get_object_iterator(
@@ -154,7 +152,7 @@ impl Device {
         let mut enum_object_ids_receptor: Option<IEnumPortableDeviceObjectIDs> = None;
         unsafe {
             self.content
-                .EnumObjects(0, parent.id.as_ptr(), None, &mut enum_object_ids_receptor)
+                .EnumObjects(0, parent.id.clone().as_pwstr(), None, &mut enum_object_ids_receptor)
                 .ok()?;
         }
         let enum_object_ids = enum_object_ids_receptor.unwrap();
@@ -182,7 +180,7 @@ impl Device {
         unsafe {
             self.properties
                 .GetValues(
-                    object.id.as_ptr(),
+                    object.id.clone().as_pwstr(),
                     Some(key_collection),
                     &mut values_receptor,
                 )
@@ -193,7 +191,7 @@ impl Device {
         let mut object_name_ptr = WStrPtr::create();
         unsafe {
             values
-                .GetStringValue(&WPD_OBJECT_NAME, object_name_ptr.as_mut_ptr())
+                .GetStringValue(&WPD_OBJECT_NAME, object_name_ptr.as_pwstr_mut_ptr())
                 .ok()?;
         }
         let object_name = object_name_ptr.to_string();
@@ -230,7 +228,7 @@ impl Device {
                 let _ = values
                     .GetStringValue(
                         &WPD_OBJECT_ORIGINAL_FILE_NAME,
-                        object_orig_name_ptr.as_mut_ptr(),
+                        object_orig_name_ptr.as_pwstr_mut_ptr(),
                     )
                     .and_then(|| object_orig_name = Some(object_orig_name_ptr.to_string()));
             }
@@ -263,7 +261,7 @@ impl Device {
             let mut time_created_ptr = WStrPtr::create();
             unsafe {
                 let _ = values
-                    .GetStringValue(&WPD_OBJECT_DATE_CREATED, time_created_ptr.as_mut_ptr())
+                    .GetStringValue(&WPD_OBJECT_DATE_CREATED, time_created_ptr.as_pwstr_mut_ptr())
                     .and_then(|| {
                         let time_created_s = &time_created_ptr.to_string();
                         time_created = parse_datetime(&time_created_s);
@@ -274,7 +272,7 @@ impl Device {
             let mut time_modified_ptr = WStrPtr::create();
             unsafe {
                 let _ = values
-                    .GetStringValue(&WPD_OBJECT_DATE_MODIFIED, time_modified_ptr.as_mut_ptr())
+                    .GetStringValue(&WPD_OBJECT_DATE_MODIFIED, time_modified_ptr.as_pwstr_mut_ptr())
                     .and_then(|| {
                         let time_modified_s = &time_modified_ptr.to_string();
                         time_modified = parse_datetime(&time_modified_s);
@@ -312,7 +310,7 @@ impl Device {
         let mut key_collection_receptor: Option<IPortableDeviceKeyCollection> = None;
         unsafe {
             self.resources
-                .GetSupportedResources(object.id.as_ptr(), &mut key_collection_receptor)
+                .GetSupportedResources(object.id.clone().as_pwstr(), &mut key_collection_receptor)
                 .ok()?;
         }
         let key_collection = key_collection_receptor.unwrap();
@@ -341,7 +339,7 @@ impl Device {
         unsafe {
             self.resources
                 .GetStream(
-                    object.id.as_ptr(),
+                    object.id.clone().as_pwstr(),
                     &WPD_RESOURCE_DEFAULT,
                     STGM_READ,
                     &mut buff_size,
@@ -357,20 +355,21 @@ impl Device {
         &self,
         parent: &ContentObject,
         name: &str,
+        size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
-    ) -> Result<(ContentObject, ResourceWriter), Error> {
+    ) -> Result<ResourceWriter, Error> {
         let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
-        let name_buf = WStrBuf::from(name, true);
+        let mut name_buf = WStrBuf::from(name, true);
         unsafe {
             values
-                .SetStringValue(&WPD_OBJECT_PARENT_ID, parent.id.as_ptr())
+                .SetStringValue(&WPD_OBJECT_PARENT_ID, parent.id.clone().as_pwstr())
                 .ok()?;
             values
-                .SetStringValue(&WPD_OBJECT_NAME, name_buf.as_ptr())
+                .SetStringValue(&WPD_OBJECT_NAME, name_buf.as_pwstr())
                 .ok()?;
             values
-                .SetStringValue(&WPD_OBJECT_ORIGINAL_FILE_NAME, name_buf.as_ptr())
+                .SetStringValue(&WPD_OBJECT_ORIGINAL_FILE_NAME, name_buf.as_pwstr())
                 .ok()?;
             values
                 .SetGuidValue(&WPD_OBJECT_FORMAT, &WPD_OBJECT_FORMAT_ALL)
@@ -379,24 +378,24 @@ impl Device {
                 .SetGuidValue(&WPD_OBJECT_CONTENT_TYPE, &WPD_CONTENT_TYPE_GENERIC_FILE)
                 .ok()?;
             values
-                .SetUnsignedLargeIntegerValue(&WPD_OBJECT_SIZE, 0u64)
+                .SetUnsignedLargeIntegerValue(&WPD_OBJECT_SIZE, size)
                 .ok()?;
         }
         if let Some(&created_dt) = created.as_ref() {
             let dt = format_datetime(&created_dt);
-            let dt_buf = WStrBuf::from(&dt, true);
+            let mut dt_buf = WStrBuf::from(&dt, true);
             unsafe {
                 values
-                    .SetStringValue(&WPD_OBJECT_DATE_CREATED, dt_buf.as_ptr())
+                    .SetStringValue(&WPD_OBJECT_DATE_CREATED, dt_buf.as_pwstr())
                     .ok()?;
             }
         }
         if let Some(&modified_dt) = modified.as_ref() {
             let dt = format_datetime(&modified_dt);
-            let dt_buf = WStrBuf::from(&dt, true);
+            let mut dt_buf = WStrBuf::from(&dt, true);
             unsafe {
                 values
-                    .SetStringValue(&WPD_OBJECT_DATE_MODIFIED, dt_buf.as_ptr())
+                    .SetStringValue(&WPD_OBJECT_DATE_MODIFIED, dt_buf.as_pwstr())
                     .ok()?;
             }
         }
@@ -417,16 +416,7 @@ impl Device {
 
         let stream = stream_receptor.unwrap();
 
-        let data_stream: IPortableDeviceDataStream = stream.cast()?;
-        let mut object_id = WStrPtr::create();
-        unsafe {
-            data_stream.GetObjectID(object_id.as_mut_ptr()).ok()?;
-        }
-        let content_object = ContentObject::new(object_id.to_idstr());
-
-        let resource_writer = ResourceWriter::new(stream, buffer_size);
-
-        Ok((content_object, resource_writer))
+        Ok(ResourceWriter::new(stream, buffer_size))
     }
 
     pub fn create_folder(
@@ -435,13 +425,13 @@ impl Device {
         name: &str,
     ) -> Result<ContentObject, Error> {
         let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
-        let name_buf = WStrBuf::from(name, true);
+        let mut name_buf = WStrBuf::from(name, true);
         unsafe {
             values
-                .SetStringValue(&WPD_OBJECT_PARENT_ID, parent.id.as_ptr())
+                .SetStringValue(&WPD_OBJECT_PARENT_ID, parent.id.clone().as_pwstr())
                 .ok()?;
             values
-                .SetStringValue(&WPD_OBJECT_NAME, name_buf.as_ptr())
+                .SetStringValue(&WPD_OBJECT_NAME, name_buf.as_pwstr())
                 .ok()?;
             values
                 .SetGuidValue(&WPD_OBJECT_FORMAT, &WPD_OBJECT_FORMAT_ALL)
@@ -454,12 +444,19 @@ impl Device {
         let mut object_id = WStrPtr::create();
         unsafe {
             self.content
-                .CreateObjectWithPropertiesOnly(Some(values), object_id.as_mut_ptr())
+                .CreateObjectWithPropertiesOnly(Some(values), object_id.as_pwstr_mut_ptr())
                 .ok()?;
         }
         let content_object = ContentObject::new(object_id.to_idstr());
 
         Ok(content_object)
+    }
+
+    pub fn delete(&self, object: &ContentObject) -> Result<(), Error> {
+        // let collection: IPortableDevicePropVariantCollection = co_create_instance(&PortableDevicePropVariantCollection)?;
+        // const PORTABLE_DEVICE_DELETE_WITH_RECURSION: u32 = 1;
+        // //self.content.Delete()
+        Ok(())
     }
 }
 
@@ -518,7 +515,7 @@ impl ContentObjectIterator {
         object_ids_vec.reverse(); // for moving item out by pop()
         self.object_ids = Some(object_ids_vec);
 
-        if err != ErrorCode::S_OK {
+        if err != S_OK {
             self.completed = true;
         }
 

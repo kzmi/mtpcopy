@@ -9,6 +9,7 @@ bindings = { package="wpd_bindings", path = "bindings" }
 chrono = "0.4"
 futures = "0.3"
 getopts = "0.2"
+windows = "0.9.1"
 # log = "0.4"
 # pretty_env_logger = "0.4"
 

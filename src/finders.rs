@@ -8,7 +8,7 @@ use crate::glob::path::create_path_pattern_matcher;
 use crate::glob::path::PathMatcher;
 use crate::glob::path::PathMatchingState;
 
-pub fn find_devices(
+pub fn device_find_devices(
     manager: &Manager,
     pattern: Option<&str>,
 ) -> Result<Vec<DeviceInfo>, Box<dyn std::error::Error>> {
@@ -26,13 +26,13 @@ pub fn find_devices(
     return Ok(devices);
 }
 
-pub fn find_storage_objects(
+pub fn device_find_storage_objects(
     device: &Device,
     pattern: Option<&str>,
 ) -> Result<Vec<ContentObjectInfo>, Box<dyn std::error::Error>> {
     let mut objects = Vec::<ContentObjectInfo>::new();
 
-    let device_obj_info = match find_device_object(device)? {
+    let device_obj_info = match device_find_device_object(device)? {
         Some(info) => info,
         None => return Ok(objects),
     };
@@ -50,7 +50,7 @@ pub fn find_storage_objects(
     Ok(objects)
 }
 
-fn find_device_object(
+fn device_find_device_object(
     device: &Device,
 ) -> Result<Option<ContentObjectInfo>, Box<dyn std::error::Error>> {
     let root = device.get_root_object();
@@ -64,7 +64,7 @@ fn find_device_object(
     Ok(None)
 }
 
-pub fn find_file_or_folder(
+pub fn device_find_file_or_folder(
     device: &Device,
     storage_object: &ContentObjectInfo,
     path: &str,
@@ -76,10 +76,10 @@ pub fn find_file_or_folder(
         PathMatchingState::Completed => return Ok(Some(storage_object.clone())),
         PathMatchingState::Accepted => (),
     }
-    find_file_or_folder_from(device, storage_object, &next_matcher.unwrap())
+    device_find_file_or_folder_from(device, storage_object, &next_matcher.unwrap())
 }
 
-fn find_file_or_folder_from(
+fn device_find_file_or_folder_from(
     device: &Device,
     base: &ContentObjectInfo,
     path_matcher: &PathMatcher,
@@ -101,7 +101,7 @@ fn find_file_or_folder_from(
     }
 
     for (info, next_matcher) in next_levels.iter() {
-        let result = find_file_or_folder_from(device, info, next_matcher)?;
+        let result = device_find_file_or_folder_from(device, info, next_matcher)?;
         if result.is_some() {
             return Ok(result);
         }

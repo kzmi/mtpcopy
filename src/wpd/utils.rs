@@ -1,12 +1,11 @@
-use bindings::windows::win32::com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX};
-use bindings::windows::Abi;
-use bindings::windows::Error;
-use bindings::windows::Guid;
-use bindings::windows::Interface;
+use bindings::Windows::Win32::Com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX};
+use bindings::Windows::Win32::SystemServices::PWSTR;
 use std::sync::Once;
+use windows::Error;
+use windows::Guid;
+use windows::Interface;
 
 pub type WChar = u16;
-pub type IDStr = Vec<WChar>;
 
 static INIT: Once = Once::new();
 
@@ -20,69 +19,84 @@ pub fn co_create_instance<T>(clsid: &Guid) -> Result<T, Error>
 where
     T: Interface,
 {
-    let mut receptor: Option<T> = None;
-    unsafe {
-        CoCreateInstance(
-            clsid,
-            None,
-            CLSCTX::CLSCTX_INPROC_SERVER.0 as u32,
-            &T::IID,
-            receptor.set_abi(),
-        )
-        .and_then(|| receptor.unwrap())
+    unsafe { CoCreateInstance(clsid, None, CLSCTX::CLSCTX_INPROC_SERVER) }
+}
+
+/// Manages object ID (WCHAR string which ends with a NULL terminator)
+pub struct IDStr {
+    vec: Vec<WChar>,
+}
+
+impl IDStr {
+    pub fn create_empty() -> IDStr {
+        let mut vec = Vec::<WChar>::with_capacity(1);
+        vec.extend([0].iter());
+        IDStr { vec }
+    }
+
+    pub fn from(p: PWSTR) -> IDStr {
+        let len = get_wstr_length(p);
+        let vec: Vec<WChar>;
+        unsafe {
+            vec = std::slice::from_raw_parts(p.0, len + 1).to_vec(); // includes null terminator
+        }
+        IDStr { vec }
+    }
+
+    pub fn as_pwstr(&mut self) -> PWSTR {
+        PWSTR(self.vec.as_mut_ptr())
+    }
+}
+
+impl Clone for IDStr {
+    fn clone(&self) -> Self {
+        IDStr {
+            vec: self.vec.clone(),
+        }
     }
 }
 
 /// Manages LPWSTR
 pub struct WStrPtr {
-    ptr: *mut WChar,
+    ptr: PWSTR,
 }
 
 impl WStrPtr {
     pub fn create() -> WStrPtr {
-        WStrPtr {
-            ptr: std::ptr::null_mut(),
-        }
+        WStrPtr { ptr: PWSTR::NULL }
     }
 
-    pub fn as_mut_ptr(&mut self) -> *mut *mut WChar {
+    pub fn as_pwstr_mut_ptr(&mut self) -> *mut PWSTR {
         &mut self.ptr
     }
 
     pub fn to_idstr(&self) -> IDStr {
-        let len = get_wstr_length(self.ptr.cast());
-        let idstr: IDStr;
-        unsafe {
-            idstr = std::slice::from_raw_parts(self.ptr.cast(), len + 1).to_vec(); // includes null terminator
-        }
-        idstr
+        IDStr::from(self.ptr)
     }
 
     pub fn to_string(&self) -> String {
         let len = get_wstr_length(self.ptr);
-        unsafe {
-            String::from_utf16_lossy(std::slice::from_raw_parts(self.ptr, len))
-        }
+        unsafe { String::from_utf16_lossy(std::slice::from_raw_parts(self.ptr.0, len)) }
     }
 }
 
 impl Drop for WStrPtr {
     fn drop(&mut self) {
         unsafe {
-            CoTaskMemFree(self.ptr.cast());
+            CoTaskMemFree(self.ptr.0.cast());
         }
     }
 }
 
 /// Manages LPWSTR array
 pub struct WStrPtrArray {
-    ptr_vec: Vec<*mut WChar>,
+    ptr_vec: Vec<PWSTR>,
 }
 
 impl WStrPtrArray {
     pub fn create(size: u32) -> WStrPtrArray {
-        let mut ptr_vec = Vec::<*mut WChar>::new();
-        ptr_vec.resize(size as usize, std::ptr::null_mut());
+        let mut ptr_vec = Vec::<PWSTR>::new();
+        ptr_vec.resize(size as usize, PWSTR::NULL);
         WStrPtrArray { ptr_vec }
     }
 
@@ -90,19 +104,14 @@ impl WStrPtrArray {
         self.ptr_vec.len() as u32
     }
 
-    pub fn as_mut_ptr(&mut self) -> *mut *mut WChar {
+    pub fn as_mut_ptr(&mut self) -> *mut PWSTR {
         self.ptr_vec.as_mut_ptr()
     }
 
     pub fn to_vec(&self, size: u32) -> Vec<IDStr> {
         let mut idstr_vec = Vec::<IDStr>::with_capacity(size as usize);
         for p in &self.ptr_vec[..size as usize] {
-            let len = get_wstr_length(p.cast());
-            let idstr: IDStr;
-            unsafe {
-                idstr = std::slice::from_raw_parts(p.cast(), len + 1).to_vec(); // includes null terminator
-            }
-            idstr_vec.push(idstr);
+            idstr_vec.push(IDStr::from(*p));
         }
         idstr_vec
     }
@@ -116,7 +125,7 @@ impl Drop for WStrPtrArray {
     fn drop(&mut self) {
         unsafe {
             for p in &self.ptr_vec {
-                CoTaskMemFree(p.cast());
+                CoTaskMemFree(p.0.cast());
             }
         }
     }
@@ -142,12 +151,8 @@ impl WStrBuf {
         WStrBuf { buf }
     }
 
-    pub fn as_mut_ptr(&mut self) -> *mut WChar {
-        self.buf.as_mut_ptr()
-    }
-
-    pub fn as_ptr(&self) -> *const WChar {
-        self.buf.as_ptr()
+    pub fn as_pwstr(&mut self) -> PWSTR {
+        PWSTR(self.buf.as_mut_ptr())
     }
 
     pub fn to_string(&self, size: u32) -> String {
@@ -155,9 +160,9 @@ impl WStrBuf {
     }
 }
 
-fn get_wstr_length(p: *const WChar) -> usize {
+fn get_wstr_length(pwstr: PWSTR) -> usize {
     let mut len: usize = 0;
-    let mut ptr: *const WChar = p;
+    let mut ptr: *const WChar = pwstr.0;
     unsafe {
         while *ptr != 0 {
             ptr = ptr.offset(1);

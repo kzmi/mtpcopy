@@ -1,14 +1,14 @@
-use bindings::windows::win32::file_system::CreateFileW;
-use bindings::windows::win32::file_system::FILE_ACCESS_FLAGS;
-use bindings::windows::win32::file_system::FILE_CREATE_FLAGS;
-use bindings::windows::win32::file_system::FILE_FLAGS_AND_ATTRIBUTES;
-use bindings::windows::win32::file_system::FILE_SHARE_FLAGS;
-use bindings::windows::win32::system_services::HANDLE;
-use bindings::windows::win32::windows_programming::CloseHandle;
-use bindings::windows::win32::windows_programming::SetFileTime;
-use bindings::windows::win32::windows_programming::SystemTimeToFileTime;
-use bindings::windows::win32::windows_programming::FILETIME;
-use bindings::windows::win32::windows_programming::SYSTEMTIME;
+use bindings::Windows::Win32::FileSystem::CreateFileW;
+use bindings::Windows::Win32::FileSystem::FILE_ACCESS_FLAGS;
+use bindings::Windows::Win32::FileSystem::FILE_CREATION_DISPOSITION;
+use bindings::Windows::Win32::FileSystem::FILE_FLAGS_AND_ATTRIBUTES;
+use bindings::Windows::Win32::FileSystem::FILE_SHARE_MODE;
+use bindings::Windows::Win32::SystemServices::{HANDLE, PWSTR};
+use bindings::Windows::Win32::WindowsProgramming::CloseHandle;
+use bindings::Windows::Win32::WindowsProgramming::SetFileTime;
+use bindings::Windows::Win32::WindowsProgramming::SystemTimeToFileTime;
+use bindings::Windows::Win32::WindowsProgramming::FILETIME;
+use bindings::Windows::Win32::WindowsProgramming::SYSTEMTIME;
 
 use chrono::{Datelike, Local, NaiveDateTime, TimeZone, Timelike, Utc};
 use std::{
@@ -16,6 +16,7 @@ use std::{
     fs::{File, OpenOptions},
     io::Write,
     os::windows::ffi::OsStrExt,
+    os::windows::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
@@ -24,21 +25,20 @@ use crate::wpd::device::{ContentObjectInfo, Device};
 use super::file_info::FileInfo;
 use super::file_reader::FileReader;
 
-trait DestinationFolder {
+pub trait DestinationFolder {
     fn get_file_info(
         &mut self,
         name: &String,
     ) -> Result<Option<FileInfo>, Box<dyn std::error::Error>>;
 
-    fn create_file<FR>(
+    fn create_file(
         &mut self,
         name: &String,
-        reader: &mut FR,
+        reader: &mut impl FileReader,
+        size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
-    ) -> Result<(), Box<dyn std::error::Error>>
-    where
-        FR: FileReader;
+    ) -> Result<(), Box<dyn std::error::Error>>;
 
     fn open_or_create_folder(
         &mut self,
@@ -83,19 +83,19 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
         }
     }
 
-    fn create_file<FR>(
+    fn create_file(
         &mut self,
         name: &String,
-        reader: &mut FR,
+        reader: &mut impl FileReader,
+        size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
     ) -> Result<(), Box<dyn std::error::Error>>
-    where
-        FR: FileReader,
     {
-        let (content_object, mut resource_writer) = self.device.create_file(
+        let mut resource_writer = self.device.create_file(
             &self.folder_object_info.content_object,
             name,
+            size,
             created,
             modified,
         )?;
@@ -103,7 +103,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
         while let Some(bytes) = reader.next()? {
             resource_writer.write(bytes)?;
         }
-        resource_writer.commit()?;
+        let content_object = resource_writer.commit()?;
 
         let object_info = self.device.get_object_info(content_object)?;
         self.entry_map.insert(object_info.name.clone(), object_info);
@@ -163,15 +163,14 @@ impl DestinationFolder for LocalDestinationFolder {
         }
     }
 
-    fn create_file<FR>(
+    fn create_file(
         &mut self,
         name: &String,
-        reader: &mut FR,
+        reader: &mut impl FileReader,
+        size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
     ) -> Result<(), Box<dyn std::error::Error>>
-    where
-        FR: FileReader,
     {
         let path_buf = Path::new(&self.folder_path).join(name);
 
@@ -250,14 +249,14 @@ impl WindowsSetFileTime {
         path_w.push(0); // terminator
         let handle = unsafe {
             CreateFileW(
-                path_w.as_ptr(),
+                PWSTR(path_w.as_mut_ptr()),
                 FILE_ACCESS_FLAGS {
                     0: FILE_ACCESS_FLAGS::FILE_GENERIC_READ.0
                         | FILE_ACCESS_FLAGS::FILE_GENERIC_WRITE.0,
                 },
-                FILE_SHARE_FLAGS::FILE_SHARE_NONE,
+                FILE_SHARE_MODE::FILE_SHARE_NONE,
                 std::ptr::null_mut(),
-                FILE_CREATE_FLAGS::OPEN_EXISTING,
+                FILE_CREATION_DISPOSITION::OPEN_EXISTING,
                 FILE_FLAGS_AND_ATTRIBUTES::FILE_ATTRIBUTE_NORMAL,
                 HANDLE { 0: 0 },
             )
@@ -316,19 +315,19 @@ fn naive_date_time_to_file_time(
     let dt_utc = dt_local.unwrap().with_timezone(&Utc);
 
     let st = SYSTEMTIME {
-        w_year: dt_utc.year() as u16,
-        w_month: dt_utc.month() as u16,
-        w_day_of_week: dt_utc.weekday().num_days_from_sunday() as u16,
-        w_day: dt_utc.day() as u16,
-        w_hour: dt_utc.hour() as u16,
-        w_minute: dt_utc.minute() as u16,
-        w_second: dt_utc.second() as u16,
-        w_milliseconds: dt_utc.timestamp_subsec_millis() as u16,
+        wYear: dt_utc.year() as u16,
+        wMonth: dt_utc.month() as u16,
+        wDayOfWeek: dt_utc.weekday().num_days_from_sunday() as u16,
+        wDay: dt_utc.day() as u16,
+        wHour: dt_utc.hour() as u16,
+        wMinute: dt_utc.minute() as u16,
+        wSecond: dt_utc.second() as u16,
+        wMilliseconds: dt_utc.timestamp_subsec_millis() as u16,
     };
 
     let mut ft = FILETIME {
-        dw_high_date_time: 0,
-        dw_low_date_time: 0,
+        dwHighDateTime: 0,
+        dwLowDateTime: 0,
     };
 
     let r = unsafe { SystemTimeToFileTime(&st, &mut ft) };
@@ -454,7 +453,6 @@ mod local_destination_folder_tests {
             std::fs::write(&path, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")?;
         }
 
-        let mut ldf = LocalDestinationFolder::new(PathBuf::from(tempdir.path()));
         let created = Some(NaiveDateTime::new(
             NaiveDate::from_ymd(2001, 2, 3),
             NaiveTime::from_hms_milli(4, 5, 6, 789),
@@ -464,8 +462,10 @@ mod local_destination_folder_tests {
             NaiveTime::from_hms_milli(5, 6, 7, 890),
         ));
 
+        let file_size = path.metadata()?.len();
         let mut reader = TestingFileReader::new();
-        ldf.create_file(&"foo bar".to_string(), &mut reader, &created, &modified)?;
+        let mut ldf = LocalDestinationFolder::new(PathBuf::from(tempdir.path()));
+        ldf.create_file(&"foo bar".to_string(), &mut reader, file_size, &created, &modified)?;
 
         let metadata = path.metadata()?;
         assert!(metadata.is_file());
@@ -482,6 +482,23 @@ mod local_destination_folder_tests {
         ];
         let expected_content: Vec<u8> = expected_content_array.into();
         assert_eq!(actual_content, expected_content);
+
+        Ok(())
+    }
+
+    #[test_case(false; "create new folder")]
+    #[test_case(true; "open existing folder")]
+    fn test_open_or_create_folder(open_existing: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let tempdir = tempfile::tempdir()?;
+        let path = tempdir.path().join("foo bar");
+
+        if open_existing {
+            std::fs::create_dir(&path)?;
+        }
+
+        let mut ldf = LocalDestinationFolder::new(PathBuf::from(tempdir.path()));
+        let ldf2 = ldf.open_or_create_folder(&"foo bar".to_string())?;
+        assert_eq!(&ldf2.folder_path, &path);
 
         Ok(())
     }
