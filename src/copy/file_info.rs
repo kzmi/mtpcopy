@@ -8,8 +8,8 @@ use std::{
 pub struct FileInfo {
     /// Name to display
     pub name: String,
-    /// Size of the resource data (or None if not provided)
-    pub data_size: Option<u64>,
+    /// Size of the resource data
+    pub data_size: u64,
     /// Whether this entry is a folder
     pub is_folder: bool,
     /// Hidden flag
@@ -30,7 +30,7 @@ impl FileInfo {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(FileInfo {
             name: info.name.clone(),
-            data_size: info.data_size.clone(),
+            data_size: info.data_size,
             is_folder: info.is_folder(),
             is_hidden: info.is_hidden,
             is_system: info.is_system,
@@ -48,9 +48,9 @@ impl FileInfo {
         let modified_date_time = DateTime::<Local>::from(metadata.modified()?);
         let file_attr = metadata.file_attributes();
         let data_size = if metadata.is_dir() {
-            None
+            0
         } else {
-            Some(metadata.file_size())
+            metadata.file_size()
         };
         Ok(FileInfo {
             name: name.to_string(),

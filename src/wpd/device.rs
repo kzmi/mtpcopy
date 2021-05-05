@@ -47,8 +47,8 @@ pub struct ContentObjectInfo {
     /// Category GUID of the functional object.
     /// Zeroes if the object was not a functional object.
     functional_object_category: Guid,
-    /// Size of the resource data (or None if not provided)
-    pub data_size: Option<u64>,
+    /// Size of the resource data
+    pub data_size: u64,
     /// Hidden flag
     pub is_hidden: bool,
     /// System flag
@@ -204,7 +204,7 @@ impl Device {
         }
 
         let mut object_orig_name: Option<String> = None;
-        let mut data_size: Option<u64> = None;
+        let mut data_size: u64 = 0;
         let mut functional_object_category = Guid::zeroed();
         let mut is_hidden = false;
         let mut is_system = false;
@@ -285,7 +285,7 @@ impl Device {
                 unsafe {
                     let _ = values
                         .GetUnsignedLargeIntegerValue(&WPD_OBJECT_SIZE, &mut data_size_tmp)
-                        .and_then(|| data_size = Some(data_size_tmp));
+                        .and_then(|| data_size = data_size_tmp);
                 }
             }
         }

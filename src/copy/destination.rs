@@ -356,7 +356,7 @@ mod local_destination_folder_tests {
         assert!(file_info_opt.is_some());
         let file_info = file_info_opt.unwrap();
         assert_eq!(file_info.name, "foo bar");
-        assert_eq!(file_info.data_size, None);
+        assert_eq!(file_info.data_size, 0u64);
         assert_eq!(file_info.is_folder, true);
         assert_eq!(file_info.is_hidden, false);
         assert_eq!(file_info.is_system, false);
@@ -390,7 +390,7 @@ mod local_destination_folder_tests {
         assert!(file_info_opt.is_some());
         let file_info = file_info_opt.unwrap();
         assert_eq!(file_info.name, "foo bar");
-        assert_eq!(file_info.data_size, Some(3));
+        assert_eq!(file_info.data_size, 3u64);
         assert_eq!(file_info.is_folder, false);
         assert_eq!(file_info.is_hidden, false);
         assert_eq!(file_info.is_system, false);

@@ -50,7 +50,7 @@ fn device_walker_do_copy(
             return dest.create_file(
                 &target_object_info.name,
                 &mut dev_reader,
-                src_file_info.data_size.unwrap(),
+                src_file_info.data_size,
                 &target_object_info.time_created,
                 &target_object_info.time_modified,
             );
@@ -113,7 +113,7 @@ fn local_walker_do_copy(
             return dest.create_file(
                 &file_name,
                 &mut reader,
-                src_file_info.data_size.unwrap(),
+                src_file_info.data_size,
                 &Some(created_date_time.naive_local()),
                 &Some(modified_date_time.naive_local()),
             );
