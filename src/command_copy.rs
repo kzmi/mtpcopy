@@ -74,7 +74,7 @@ fn find_device_file_or_folder<'d>(
 ) -> Result<(Device, ContentObjectInfo), Box<dyn std::error::Error>> {
     let storage_path = DeviceStoragePath::from(path)?;
 
-    let device_vec = device_find_devices(manager, Some(storage_path.device_name.as_str()))?;
+    let device_vec = device_find_devices(manager, Some(&storage_path.device_name))?;
     if device_vec.len() == 0 {
         return Err(format!("the {} device not found.", subject_type).into());
     }
@@ -85,7 +85,7 @@ fn find_device_file_or_folder<'d>(
     let device = Device::open(&device_vec[0])?;
 
     let storage_object_vec =
-        device_find_storage_objects(&device, Some(storage_path.storage_name.as_str()))?;
+        device_find_storage_objects(&device, Some(&storage_path.storage_name))?;
     if storage_object_vec.len() == 0 {
         return Err(format!("the {} storage not found.", subject_type).into());
     }
@@ -94,7 +94,7 @@ fn find_device_file_or_folder<'d>(
     }
 
     let object_opt =
-        device_find_file_or_folder(&device, &storage_object_vec[0], storage_path.path.as_str())?;
+        device_find_file_or_folder(&device, &storage_object_vec[0], &storage_path.path)?;
     if object_opt.is_none() {
         let message = if allow_file {
             format!("the {} file or folder not found.", subject_type)

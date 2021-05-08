@@ -13,11 +13,11 @@ pub fn command_list_files(
     recursive: bool,
     verbose: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let storage_path = DeviceStoragePath::from(path.as_str())?;
+    let storage_path = DeviceStoragePath::from(&path)?;
 
     init_com();
     let manager = Manager::get_portable_device_manager()?;
-    let mut device_info_vec = device_find_devices(&manager, Some(storage_path.device_name.as_str()))?;
+    let mut device_info_vec = device_find_devices(&manager, Some(&storage_path.device_name))?;
     if device_info_vec.len() == 0 {
         return Err("No device matched.".into());
     }
@@ -33,7 +33,7 @@ pub fn command_list_files(
     let device = Device::open(&device_info)?;
 
     let mut storage_object_vec =
-        device_find_storage_objects(&device, Some(storage_path.storage_name.as_str()))?;
+        device_find_storage_objects(&device, Some(&storage_path.storage_name))?;
     if storage_object_vec.len() == 0 {
         return Err(format!("No storage matched on '{}'", &device_info.name).into());
     }
@@ -48,7 +48,7 @@ pub fn command_list_files(
     let storage_object = storage_object_vec.pop().unwrap();
 
     let base_object_opt =
-        device_find_file_or_folder(&device, &storage_object, storage_path.path.as_str())?;
+        device_find_file_or_folder(&device, &storage_object, &storage_path.path)?;
     match base_object_opt {
         None => Err(format!(
             "No file or folder matched.: device: '{}', storage: '{}', path: '{}'",

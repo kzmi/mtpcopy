@@ -16,13 +16,12 @@ pub fn device_find_devices(
 
     let mut devices = Vec::<DeviceInfo>::new();
 
-    let has_name_pattern = pattern.is_some();
-    let name_pattern = FileNamePattern::new(pattern.unwrap_or(""));
+    let name_pattern = FileNamePattern::new(pattern.unwrap_or("*"));
 
     let mut iter = manager.get_device_iterator()?;
     while let Some(device_info) = iter.next()? {
         log::trace!("  detected \"{:?}\"", &device_info);
-        if !has_name_pattern || name_pattern.matches(device_info.name.as_str()) {
+        if name_pattern.matches(&device_info.name) {
             log::trace!("   --> matched");
             devices.push(device_info);
         }
@@ -51,7 +50,7 @@ pub fn device_find_storage_objects(
         log::trace!("  detected device object entry {:?}", &obj);
         let info = device.get_object_info(obj)?;
         log::trace!("   details {:?}", &info);
-        if info.is_storage() && (!has_name_pattern || name_pattern.matches(info.name.as_str())) {
+        if info.is_storage() && (!has_name_pattern || name_pattern.matches(&info.name)) {
             log::trace!("   --> storage object found");
             objects.push(info);
         }
@@ -103,7 +102,7 @@ fn device_find_file_or_folder_from(
         if info.is_functional_object() {
             continue;
         }
-        let (state, next_matcher) = path_matcher.matches(info.name.as_str(), info.is_folder());
+        let (state, next_matcher) = path_matcher.matches(&info.name, info.is_folder());
         match state {
             PathMatchingState::Rejected => continue,
             PathMatchingState::Completed => return Ok(Some(info)),

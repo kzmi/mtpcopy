@@ -7,6 +7,8 @@ mod glob;
 mod path;
 mod wpd;
 
+use std::fmt::Write;
+
 #[derive(Debug, Eq, PartialEq)]
 enum Command {
     None,
@@ -110,9 +112,9 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
     }
 
     if help {
-        let brief = usage_brief();
+        let brief = usage_brief()?;
         show_version();
-        print!("{}", options.usage(brief.as_str()));
+        print!("{}", options.usage(&brief));
     } else if version {
         show_version();
     }
@@ -125,20 +127,21 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
     })
 }
 
-fn usage_brief() -> String {
+fn usage_brief() -> Result<String, std::fmt::Error> {
     let bin_name = env!("CARGO_BIN_NAME");
-    String::new()
-        + format!("Usage: {} [-hv]\n", bin_name).as_str()
-        + format!("       {} [-s]\n", bin_name).as_str()
-        + format!("       {} [-l] [-Rv] <path>\n", bin_name).as_str()
-        + format!("       {} <source-path> <dest-path>\n", bin_name).as_str()
-        + "\n"
-        + "Path:\n"
-        + "    A path on the portable device must be specified as:\n"
-        + "        <device-name>:<storage-name>:<path>\n"
-        + "        e.g. \"PD-123:SD Card:/Pictures/2021/April\"\n"
-        + "        e.g. \"PD-???:*Card:/**/April\"\n"
-        + "    The other will be used as the local path on your computer."
+    let mut s = String::new();
+    write!(&mut s, "Usage: {} [-hv]\n", bin_name)?;
+    write!(&mut s, "       {} [-s]\n", bin_name)?;
+    write!(&mut s, "       {} [-l] [-Rv] <path>\n", bin_name)?;
+    write!(&mut s, "       {} <source-path> <dest-path>\n", bin_name)?;
+    s.push_str("\n");
+    s.push_str("Path:\n");
+    s.push_str("    A path on the portable device must be specified as:\n");
+    s.push_str("        <device-name>:<storage-name>:<path>\n");
+    s.push_str("        e.g. \"PD-123:SD Card:/Pictures/2021/April\"\n");
+    s.push_str("        e.g. \"PD-???:*Card:/**/April\"\n");
+    s.push_str("    The other will be used as the local path on your computer.");
+    Ok(s)
 }
 
 fn show_version() {

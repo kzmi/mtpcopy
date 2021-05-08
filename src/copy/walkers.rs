@@ -112,7 +112,7 @@ fn local_walker_do_copy(
     let file_name = String::from(path.file_name().unwrap().to_str().unwrap());
 
     if metadata.is_file() {
-        let src_file_info = FileInfo::from_metadata(&metadata, file_name.as_str())?;
+        let src_file_info = FileInfo::from_metadata(&metadata, &file_name)?;
         let dest_file_info = dest.get_file_info(&file_name)?;
 
         if let Some(dest_file_info_ref) = dest_file_info.as_ref() {

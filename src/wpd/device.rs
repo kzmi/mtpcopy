@@ -584,7 +584,7 @@ fn parse_datetime(s: &String) -> Option<NaiveDateTime> {
     {
         let date_part: String = s.chars().take(10).collect();
         let mut parsed_date = Parsed::new();
-        chrono::format::parse(&mut parsed_date, date_part.as_str(), unsafe {
+        chrono::format::parse(&mut parsed_date, &date_part, unsafe {
             DATE_FORMAT_ITEMS.iter()
         })
         .ok()?;
@@ -595,7 +595,7 @@ fn parse_datetime(s: &String) -> Option<NaiveDateTime> {
     {
         let time_part: String = s.chars().skip(11).collect();
         let mut parsed_time = Parsed::new();
-        chrono::format::parse(&mut parsed_time, time_part.as_str(), unsafe {
+        chrono::format::parse(&mut parsed_time, &time_part, unsafe {
             TIME_FORMAT_ITEMS.iter()
         })
         .ok()?;
