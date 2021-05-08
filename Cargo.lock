@@ -27,6 +27,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "bindings"
+version = "0.1.0"
+dependencies = [
+ "windows",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -225,6 +232,7 @@ checksum = "b16bd47d9e329435e309c58469fe0791c2d0d1ba96ec0954152a5ae2b04387dc"
 name = "mtpcopy"
 version = "0.1.0"
 dependencies = [
+ "bindings",
  "chrono",
  "futures",
  "getopts",
@@ -233,7 +241,6 @@ dependencies = [
  "tempfile",
  "test-case",
  "windows",
- "wpd_bindings",
 ]
 
 [[package]]
@@ -540,11 +547,4 @@ checksum = "0f7794c652845dc466cb8dc1b86c08345707c8144bc53e9086430047c7d33b76"
 dependencies = [
  "syn",
  "windows_gen",
-]
-
-[[package]]
-name = "wpd_bindings"
-version = "0.1.0"
-dependencies = [
- "windows",
 ]
