@@ -90,8 +90,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
         size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
-    ) -> Result<(), Box<dyn std::error::Error>>
-    {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut resource_writer = self.device.create_file(
             &self.folder_object_info.content_object,
             name,
@@ -100,7 +99,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
             modified,
         )?;
 
-        while let Some(bytes) = reader.next()? {
+        while let Some(bytes) = reader.next(resource_writer.get_buffer_size())? {
             resource_writer.write(bytes)?;
         }
         let content_object = resource_writer.commit()?;
@@ -167,11 +166,11 @@ impl DestinationFolder for LocalDestinationFolder {
         &mut self,
         name: &String,
         reader: &mut impl FileReader,
+        #[allow(unused_variables)]
         size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
-    ) -> Result<(), Box<dyn std::error::Error>>
-    {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let path_buf = Path::new(&self.folder_path).join(name);
 
         let copy_result;
@@ -213,11 +212,11 @@ impl DestinationFolder for LocalDestinationFolder {
     }
 }
 
-fn copy_to_file<FR>(reader: &mut FR, file: &mut File) -> Result<(), Box<dyn std::error::Error>>
-where
-    FR: FileReader,
-{
-    while let Some(bytes) = reader.next()? {
+fn copy_to_file(
+    reader: &mut impl FileReader,
+    file: &mut File,
+) -> Result<(), Box<dyn std::error::Error>> {
+    while let Some(bytes) = reader.next(reader.get_optimized_buffer_size())? {
         file.write_all(bytes)?;
     }
     Ok(())
@@ -429,7 +428,11 @@ mod local_destination_folder_tests {
     }
 
     impl FileReader for TestingFileReader {
-        fn next(&mut self) -> Result<Option<&[u8]>, Box<dyn std::error::Error>> {
+        fn get_optimized_buffer_size(&self) -> u32 {
+            self.buf.len() as u32
+        }
+
+        fn next(&mut self, _max_size: u32) -> Result<Option<&[u8]>, Box<dyn std::error::Error>> {
             if self.count >= 3 {
                 Ok(None)
             } else {
@@ -465,7 +468,13 @@ mod local_destination_folder_tests {
         let file_size = path.metadata()?.len();
         let mut reader = TestingFileReader::new();
         let mut ldf = LocalDestinationFolder::new(PathBuf::from(tempdir.path()));
-        ldf.create_file(&"foo bar".to_string(), &mut reader, file_size, &created, &modified)?;
+        ldf.create_file(
+            &"foo bar".to_string(),
+            &mut reader,
+            file_size,
+            &created,
+            &modified,
+        )?;
 
         let metadata = path.metadata()?;
         assert!(metadata.is_file());

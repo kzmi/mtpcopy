@@ -334,7 +334,7 @@ impl Device {
 
     pub fn get_resoure(&self, object: &ContentObject) -> Result<ResourceReader, Error> {
         const STGM_READ: u32 = 0;
-        let mut buff_size = 100000u32;
+        let mut buff_size: u32 = 0;
         let mut stream_receptor: Option<IStream> = None;
         unsafe {
             self.resources

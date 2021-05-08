@@ -2,7 +2,8 @@ use crate::wpd::resource_stream::ResourceReader;
 use std::{fs::File, io::Read};
 
 pub trait FileReader {
-    fn next(&mut self) -> Result<Option<&[u8]>, Box<dyn std::error::Error>>;
+    fn get_optimized_buffer_size(&self) -> u32;
+    fn next(&mut self, max_size: u32) -> Result<Option<&[u8]>, Box<dyn std::error::Error>>;
 }
 
 pub struct LocalFileReader {
@@ -19,7 +20,12 @@ impl LocalFileReader {
 }
 
 impl FileReader for LocalFileReader {
-    fn next(&mut self) -> Result<Option<&[u8]>, Box<dyn std::error::Error>> {
+    fn get_optimized_buffer_size(&self) -> u32 {
+        self.buf.len() as u32
+    }
+
+    fn next(&mut self, max_size: u32) -> Result<Option<&[u8]>, Box<dyn std::error::Error>> {
+        self.buf.resize(max_size as usize, 0);
         let len = self.file.read(self.buf.as_mut_slice())?;
         if len > 0 {
             Ok(Some(&self.buf.as_slice()[..len]))
@@ -40,7 +46,11 @@ impl DeviceFileReader {
 }
 
 impl FileReader for DeviceFileReader {
-    fn next(&mut self) -> Result<Option<&[u8]>, Box<dyn std::error::Error>> {
-        Ok(self.reader.next()?)
+    fn get_optimized_buffer_size(&self) -> u32 {
+        self.reader.get_optimized_buffer_size()
+    }
+
+    fn next(&mut self, max_size: u32) -> Result<Option<&[u8]>, Box<dyn std::error::Error>> {
+        Ok(self.reader.next(max_size)?)
     }
 }
