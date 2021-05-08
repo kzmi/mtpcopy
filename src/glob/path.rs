@@ -82,6 +82,7 @@ impl RootPathMatcher {
     }
 
     // for inspection in testing
+    #[allow(dead_code)]
     fn next_matcher(&self) -> Option<&PathMatcher> {
         match &self.next {
             None => None,
@@ -158,6 +159,7 @@ impl PathMatcher {
     }
 
     // for inspection in testing
+    #[allow(dead_code)]
     fn next_matcher(&self) -> Option<&PathMatcher> {
         match &self {
             PathMatcher::ExactNameMatcher {

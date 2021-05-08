@@ -26,6 +26,7 @@ impl FileNamePattern {
     }
 
     /// Returns pattern string.
+    #[allow(dead_code)]
     pub fn get_pattern(&self) -> String {
         self.pattern.iter().collect()
     }

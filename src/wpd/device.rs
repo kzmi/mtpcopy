@@ -319,6 +319,7 @@ impl Device {
         })
     }
 
+    #[allow(dead_code)]
     pub fn get_resource_keys(&self, object: &ContentObject) -> Result<Vec<PROPERTYKEY>, Error> {
         let mut key_collection_receptor: Option<IPortableDeviceKeyCollection> = None;
         unsafe {

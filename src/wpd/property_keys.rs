@@ -79,7 +79,3 @@ pub fn make_empty_propertykey() -> PROPERTYKEY {
         pid: 0,
     }
 }
-
-pub unsafe fn copy_propertykey(propertykey: &PROPERTYKEY) -> PROPERTYKEY {
-    core::ptr::read(propertykey)
-}
