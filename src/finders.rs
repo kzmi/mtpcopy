@@ -1,5 +1,5 @@
-use crate::wpd::device::Device;
 use crate::wpd::device::ContentObjectInfo;
+use crate::wpd::device::Device;
 use crate::wpd::manager::DeviceInfo;
 use crate::wpd::manager::Manager;
 
@@ -12,6 +12,8 @@ pub fn device_find_devices(
     manager: &Manager,
     pattern: Option<&str>,
 ) -> Result<Vec<DeviceInfo>, Box<dyn std::error::Error>> {
+    log::trace!("device_find_devices pattern={:?}", &pattern);
+
     let mut devices = Vec::<DeviceInfo>::new();
 
     let has_name_pattern = pattern.is_some();
@@ -19,7 +21,9 @@ pub fn device_find_devices(
 
     let mut iter = manager.get_device_iterator()?;
     while let Some(device_info) = iter.next()? {
+        log::trace!("  detected \"{:?}\"", &device_info);
         if !has_name_pattern || name_pattern.matches(device_info.name.as_str()) {
+            log::trace!("   --> matched");
             devices.push(device_info);
         }
     }
@@ -30,6 +34,8 @@ pub fn device_find_storage_objects(
     device: &Device,
     pattern: Option<&str>,
 ) -> Result<Vec<ContentObjectInfo>, Box<dyn std::error::Error>> {
+    log::trace!("device_find_storage_objects pattern={:?}", &pattern);
+
     let mut objects = Vec::<ContentObjectInfo>::new();
 
     let device_obj_info = match device_find_device_object(device)? {
@@ -42,8 +48,11 @@ pub fn device_find_storage_objects(
 
     let mut iter = device.get_object_iterator(&device_obj_info.content_object)?;
     while let Some(obj) = iter.next()? {
+        log::trace!("  detected device object entry {:?}", &obj);
         let info = device.get_object_info(obj)?;
+        log::trace!("   details {:?}", &info);
         if info.is_storage() && (!has_name_pattern || name_pattern.matches(info.name.as_str())) {
+            log::trace!("   --> storage object found");
             objects.push(info);
         }
     }
@@ -56,8 +65,10 @@ fn device_find_device_object(
     let root = device.get_root_object();
     let mut iter = device.get_object_iterator(&root)?;
     while let Some(obj) = iter.next()? {
+        log::trace!("  detected device root entry {:?}", &obj);
         let info = device.get_object_info(obj)?;
         if info.is_device() {
+            log::trace!("   --> device object found");
             return Ok(Some(info));
         }
     }

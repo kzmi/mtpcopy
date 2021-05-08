@@ -1,5 +1,5 @@
 use bindings::Windows::Win32::StructuredStorage::{
-    IStream, PROPVARIANT, PROPVARIANT_0, PROPVARIANT_0_0_0_abi, PROPVARIANT_0_0_abi,
+    IStream, PROPVARIANT_0_0_0_abi, PROPVARIANT_0_0_abi, PROPVARIANT, PROPVARIANT_0,
 };
 use bindings::Windows::Win32::SystemServices::{BOOL, S_OK};
 use bindings::Windows::Win32::WindowsPortableDevices::{
@@ -12,7 +12,7 @@ use bindings::Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY;
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::Parsed;
 use chrono::naive::NaiveDateTime;
-use std::sync::Once;
+use std::{fmt::Debug, sync::Once};
 use windows::Error;
 use windows::Guid;
 
@@ -40,6 +40,15 @@ impl Clone for ContentObject {
     }
 }
 
+impl Debug for ContentObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ContentObject")
+            .field("id", &self.id)
+            .finish()
+    }
+}
+
+#[derive(Debug)]
 pub struct ContentObjectInfo {
     pub content_object: ContentObject,
     /// Name to display

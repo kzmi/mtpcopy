@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use bindings::Windows::Win32::WindowsPortableDevices::{
     IPortableDeviceManager, PortableDeviceManager,
 };
@@ -10,6 +12,7 @@ pub struct Manager {
     manager: IPortableDeviceManager,
 }
 
+#[derive(Debug)]
 pub struct DeviceInfo {
     pub id: IDStr,
     pub name: String,

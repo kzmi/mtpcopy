@@ -30,9 +30,10 @@ struct Args {
 }
 
 fn main() {
+    pretty_env_logger::init();
     let result = run();
     if let Err(err) = result {
-        eprintln!("{}", err.to_string());
+        log::error!("{}", err.to_string());
         std::process::exit(1);
     }
 }

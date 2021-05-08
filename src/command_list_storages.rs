@@ -5,6 +5,8 @@ use crate::wpd::utils::init_com;
 use crate::finders::*;
 
 pub fn command_list_storages() -> Result<(), Box<dyn std::error::Error>> {
+    log::trace!("COMMAND list");
+
     init_com();
     let manager = Manager::get_portable_device_manager()?;
     let device_info_vec = device_find_devices(&manager, None)?;

@@ -1,6 +1,6 @@
 use bindings::Windows::Win32::Com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX};
 use bindings::Windows::Win32::SystemServices::PWSTR;
-use std::sync::Once;
+use std::{fmt::{Debug, Write}, sync::Once};
 use windows::Error;
 use windows::Guid;
 use windows::Interface;
@@ -11,6 +11,7 @@ static INIT: Once = Once::new();
 
 pub fn init_com() {
     INIT.call_once(|| unsafe {
+        log::trace!("CoInitialize");
         let _ = CoInitialize(std::ptr::null_mut());
     });
 }
@@ -55,6 +56,23 @@ impl Clone for IDStr {
         }
     }
 }
+
+impl Debug for IDStr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_char('"')?;
+        for wc in self.vec.iter() {
+            if *wc >= 0x20 && *wc <= 0x7e {
+                f.write_char(*wc as u8 as char)?;
+            } else if *wc == 0 {
+                f.write_str("{NUL}")?;
+            } else {
+                f.write_fmt(format_args!("{{{:04x}}}", wc))?;
+            }
+        }
+        f.write_char('"')
+    }
+}
+
 
 /// Manages LPWSTR
 pub struct WStrPtr {
