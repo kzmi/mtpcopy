@@ -1,22 +1,17 @@
-use bindings::Windows::Win32::FileSystem::CreateFileW;
-use bindings::Windows::Win32::FileSystem::FILE_ACCESS_FLAGS;
-use bindings::Windows::Win32::FileSystem::FILE_CREATION_DISPOSITION;
-use bindings::Windows::Win32::FileSystem::FILE_FLAGS_AND_ATTRIBUTES;
-use bindings::Windows::Win32::FileSystem::FILE_SHARE_MODE;
+use bindings::Windows::Win32::FileSystem::{
+    CreateFileW, FILE_ACCESS_FLAGS, FILE_CREATION_DISPOSITION, FILE_FLAGS_AND_ATTRIBUTES,
+    FILE_SHARE_MODE,
+};
 use bindings::Windows::Win32::SystemServices::{HANDLE, PWSTR};
-use bindings::Windows::Win32::WindowsProgramming::CloseHandle;
-use bindings::Windows::Win32::WindowsProgramming::SetFileTime;
-use bindings::Windows::Win32::WindowsProgramming::SystemTimeToFileTime;
-use bindings::Windows::Win32::WindowsProgramming::FILETIME;
-use bindings::Windows::Win32::WindowsProgramming::SYSTEMTIME;
-
+use bindings::Windows::Win32::WindowsProgramming::{
+    CloseHandle, SetFileTime, SystemTimeToFileTime, FILETIME, SYSTEMTIME,
+};
 use chrono::{Datelike, Local, NaiveDateTime, TimeZone, Timelike, Utc};
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
     io::Write,
     os::windows::ffi::OsStrExt,
-    os::windows::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
@@ -44,6 +39,8 @@ pub trait DestinationFolder {
         &mut self,
         name: &String,
     ) -> Result<Box<Self>, Box<dyn std::error::Error>>;
+
+    fn delete_file_or_folder(&mut self, name: &String) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 pub struct DeviceDestinationFolder<'d> {
@@ -137,6 +134,14 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
             }
         }
     }
+
+    fn delete_file_or_folder(&mut self, name: &String) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(object_info) = self.entry_map.get(name) {
+            self.device.delete(&object_info.content_object)?;
+            self.entry_map.remove(name);
+        }
+        Ok(())
+    }
 }
 
 pub struct LocalDestinationFolder {
@@ -166,8 +171,7 @@ impl DestinationFolder for LocalDestinationFolder {
         &mut self,
         name: &String,
         reader: &mut impl FileReader,
-        #[allow(unused_variables)]
-        size: u64,
+        #[allow(unused_variables)] size: u64,
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -209,6 +213,17 @@ impl DestinationFolder for LocalDestinationFolder {
             std::fs::create_dir_all(&path_buf)?;
         }
         Ok(Box::new(LocalDestinationFolder::new(path_buf)))
+    }
+
+    fn delete_file_or_folder(&mut self, name: &String) -> Result<(), Box<dyn std::error::Error>> {
+        let path_buf = Path::new(&self.folder_path).join(name);
+
+        if path_buf.is_file() {
+            std::fs::remove_file(path_buf)?;
+        } else if path_buf.is_dir() {
+            std::fs::remove_dir_all(path_buf)?;
+        }
+        Ok(())
     }
 }
 

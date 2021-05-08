@@ -1,18 +1,20 @@
-use bindings::Windows::Win32::StructuredStorage::IStream;
+use bindings::Windows::Win32::StructuredStorage::{
+    IStream, PROPVARIANT, PROPVARIANT_0, PROPVARIANT_0_0_0_abi, PROPVARIANT_0_0_abi,
+};
+use bindings::Windows::Win32::SystemServices::{BOOL, S_OK};
 use bindings::Windows::Win32::WindowsPortableDevices::{
     IEnumPortableDeviceObjectIDs, IPortableDevice, IPortableDeviceContent,
-    IPortableDeviceDataStream, IPortableDeviceKeyCollection, IPortableDevicePropVariantCollection,
-    IPortableDeviceProperties, IPortableDeviceResources, IPortableDeviceValues, PortableDevice,
-    PortableDeviceKeyCollection, PortableDevicePropVariantCollection, PortableDeviceValues,
+    IPortableDeviceKeyCollection, IPortableDevicePropVariantCollection, IPortableDeviceProperties,
+    IPortableDeviceResources, IPortableDeviceValues, PortableDevice, PortableDeviceKeyCollection,
+    PortableDevicePropVariantCollection, PortableDeviceValues, DELETE_OBJECT_OPTIONS,
 };
-use bindings::Windows::Win32::SystemServices::{BOOL, S_OK, PWSTR};
 use bindings::Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY;
-use windows::Error;
-use windows::Guid;
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::Parsed;
 use chrono::naive::NaiveDateTime;
 use std::sync::Once;
+use windows::Error;
+use windows::Guid;
 
 use super::guids::*;
 use super::manager::DeviceInfo;
@@ -152,7 +154,12 @@ impl Device {
         let mut enum_object_ids_receptor: Option<IEnumPortableDeviceObjectIDs> = None;
         unsafe {
             self.content
-                .EnumObjects(0, parent.id.clone().as_pwstr(), None, &mut enum_object_ids_receptor)
+                .EnumObjects(
+                    0,
+                    parent.id.clone().as_pwstr(),
+                    None,
+                    &mut enum_object_ids_receptor,
+                )
                 .ok()?;
         }
         let enum_object_ids = enum_object_ids_receptor.unwrap();
@@ -261,7 +268,10 @@ impl Device {
             let mut time_created_ptr = WStrPtr::create();
             unsafe {
                 let _ = values
-                    .GetStringValue(&WPD_OBJECT_DATE_CREATED, time_created_ptr.as_pwstr_mut_ptr())
+                    .GetStringValue(
+                        &WPD_OBJECT_DATE_CREATED,
+                        time_created_ptr.as_pwstr_mut_ptr(),
+                    )
                     .and_then(|| {
                         let time_created_s = &time_created_ptr.to_string();
                         time_created = parse_datetime(&time_created_s);
@@ -272,7 +282,10 @@ impl Device {
             let mut time_modified_ptr = WStrPtr::create();
             unsafe {
                 let _ = values
-                    .GetStringValue(&WPD_OBJECT_DATE_MODIFIED, time_modified_ptr.as_pwstr_mut_ptr())
+                    .GetStringValue(
+                        &WPD_OBJECT_DATE_MODIFIED,
+                        time_modified_ptr.as_pwstr_mut_ptr(),
+                    )
                     .and_then(|| {
                         let time_modified_s = &time_modified_ptr.to_string();
                         time_modified = parse_datetime(&time_modified_s);
@@ -453,9 +466,31 @@ impl Device {
     }
 
     pub fn delete(&self, object: &ContentObject) -> Result<(), Error> {
-        // let collection: IPortableDevicePropVariantCollection = co_create_instance(&PortableDevicePropVariantCollection)?;
-        // const PORTABLE_DEVICE_DELETE_WITH_RECURSION: u32 = 1;
-        // //self.content.Delete()
+        let collection: IPortableDevicePropVariantCollection =
+            co_create_instance(&PortableDevicePropVariantCollection)?;
+        let propvar = PROPVARIANT {
+            Anonymous: PROPVARIANT_0 {
+                Anonymous: PROPVARIANT_0_0_abi {
+                    vt: 31, // VT_LPWSTR
+                    wReserved1: 0,
+                    wReserved2: 0,
+                    wReserved3: 0,
+                    Anonymous: PROPVARIANT_0_0_0_abi {
+                        pwszVal: object.id.clone().as_pwstr(),
+                    },
+                },
+            },
+        };
+        unsafe {
+            collection.Add(&propvar).ok()?;
+            self.content
+                .Delete(
+                    DELETE_OBJECT_OPTIONS::PORTABLE_DEVICE_DELETE_WITH_RECURSION.0 as u32,
+                    &collection,
+                    std::ptr::null_mut(),
+                )
+                .ok()?;
+        }
         Ok(())
     }
 }
