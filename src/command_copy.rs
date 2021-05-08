@@ -1,22 +1,17 @@
 use std::os::windows::prelude::MetadataExt;
-use std::{fmt, io::Write, path::Path};
-
-use windows::Error;
-
-use chrono::NaiveDateTime;
+use std::path::Path;
 
 use crate::copy::walkers::{DeviceWalker, LocalWalker, Walker};
 use crate::finders::*;
 use crate::path::get_path_type;
 use crate::path::PathType;
 use crate::wpd::device::Device;
-use crate::wpd::device::{ContentObject, ContentObjectInfo};
+use crate::wpd::device::{ContentObjectInfo};
 use crate::wpd::manager::Manager;
-use crate::wpd::resource_stream::ResourceReader;
 use crate::wpd::utils::init_com;
 use crate::Paths;
 use crate::{
-    copy::destination::{DestinationFolder, DeviceDestinationFolder, LocalDestinationFolder},
+    copy::destination::{DeviceDestinationFolder, LocalDestinationFolder},
     path::DeviceStoragePath,
 };
 
