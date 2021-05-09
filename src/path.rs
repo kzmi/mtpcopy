@@ -28,7 +28,10 @@ impl DeviceStoragePath {
         if path_sep.len() != 3 {
             return Err("invalid device storage path format.".into());
         }
-        let path = path_sep.pop().unwrap();
+        let mut path = path_sep.pop().unwrap();
+        if path.len() == 0 {
+            path = String::from("\\");
+        }
         let storage_name = path_sep.pop().unwrap();
         let device_name = path_sep.pop().unwrap();
         Ok(DeviceStoragePath {
