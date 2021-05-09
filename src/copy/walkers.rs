@@ -5,8 +5,8 @@ use chrono::{DateTime, Local, NaiveDateTime};
 
 use crate::wpd::device::{ContentObjectInfo, Device};
 
-use super::{destination::DestinationFolder, file_info::FileInfo};
 use super::file_reader::{DeviceFileReader, LocalFileReader};
+use super::{destination::DestinationFolder, file_info::FileInfo};
 
 pub trait Walker {
     fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>>;
@@ -57,13 +57,16 @@ fn device_walker_do_copy(
 
         let res_reader = device.get_resoure(&target_object_info.content_object)?;
         let mut dev_reader = DeviceFileReader::new(res_reader);
-        return dest.create_file(
+        report_copying_start(&src_file_info);
+        dest.create_file(
             &target_object_info.name,
             &mut dev_reader,
             src_file_info.data_size,
             &target_object_info.time_created,
             &target_object_info.time_modified,
-        );
+        )?;
+        report_copying_end();
+        return Ok(());
     }
 
     if !target_object_info.is_folder() {
@@ -86,7 +89,9 @@ pub struct LocalWalker {
 
 impl LocalWalker {
     pub fn new(path: &str) -> LocalWalker {
-        LocalWalker { path: PathBuf::from(path) }
+        LocalWalker {
+            path: PathBuf::from(path),
+        }
     }
 }
 
@@ -129,13 +134,16 @@ fn local_walker_do_copy(
         let mut reader = LocalFileReader::new(file);
         let created_date_time = DateTime::<Local>::from(metadata.created()?);
         let modified_date_time = DateTime::<Local>::from(metadata.modified()?);
-        return dest.create_file(
+        report_copying_start(&src_file_info);
+        dest.create_file(
             &file_name,
             &mut reader,
             src_file_info.data_size,
             &Some(created_date_time.naive_local()),
             &Some(modified_date_time.naive_local()),
-        );
+        )?;
+        report_copying_end();
+        return Ok(());
     }
 
     if !metadata.is_dir() {
@@ -175,4 +183,12 @@ fn get_file_time(file_info: &FileInfo) -> Option<NaiveDateTime> {
             None
         }
     }
+}
+
+fn report_copying_start(src_file_info: &FileInfo) {
+    print!("copying {} ...", src_file_info.name);
+}
+
+fn report_copying_end() {
+    println!("");
 }
