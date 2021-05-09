@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub fn command_copy(paths: &Paths) -> Result<(), Box<dyn std::error::Error>> {
-    init_com();
+    init_com()?;
     let manager = Manager::get_portable_device_manager()?;
 
     let src_path = paths.src.as_str();

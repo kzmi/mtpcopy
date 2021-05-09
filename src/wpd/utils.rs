@@ -1,19 +1,25 @@
 use bindings::Windows::Win32::Com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX};
 use bindings::Windows::Win32::SystemServices::PWSTR;
-use std::{fmt::{Debug, Write}, sync::Once};
+use std::{
+    fmt::{Debug, Write},
+    sync::atomic::{AtomicBool, Ordering},
+};
 use windows::Error;
 use windows::Guid;
 use windows::Interface;
 
 pub type WChar = u16;
 
-static INIT: Once = Once::new();
+static CO_INIT_STATE: AtomicBool = AtomicBool::new(false);
 
-pub fn init_com() {
-    INIT.call_once(|| unsafe {
+pub fn init_com() -> Result<(), Error> {
+    if CO_INIT_STATE.swap(true, Ordering::Relaxed) == false {
         log::trace!("CoInitialize");
-        let _ = CoInitialize(std::ptr::null_mut());
-    });
+        unsafe {
+            CoInitialize(std::ptr::null_mut()).ok()?;
+        }
+    }
+    Ok(())
 }
 
 pub fn co_create_instance<T>(clsid: &Guid) -> Result<T, Error>
@@ -47,6 +53,8 @@ impl IDStr {
     pub fn as_pwstr(&mut self) -> PWSTR {
         PWSTR(self.vec.as_mut_ptr())
     }
+
+    // TODO: need as_pcwstr(&self) -> PCWSTR
 }
 
 impl Clone for IDStr {
@@ -72,7 +80,6 @@ impl Debug for IDStr {
         f.write_char('"')
     }
 }
-
 
 /// Manages LPWSTR
 pub struct WStrPtr {

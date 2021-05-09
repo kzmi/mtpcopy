@@ -15,7 +15,7 @@ pub fn command_list_files(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let storage_path = DeviceStoragePath::from(&path)?;
 
-    init_com();
+    init_com()?;
     let manager = Manager::get_portable_device_manager()?;
     let mut device_info_vec = device_find_devices(&manager, Some(&storage_path.device_name))?;
     if device_info_vec.len() == 0 {
