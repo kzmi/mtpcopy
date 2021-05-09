@@ -1,5 +1,5 @@
-use crate::wpd::device::ContentObjectInfo;
 use crate::wpd::device::Device;
+use crate::wpd::device::ContentObjectInfo;
 use crate::wpd::manager::DeviceInfo;
 use crate::wpd::manager::Manager;
 
@@ -8,6 +8,8 @@ use crate::glob::path::create_path_pattern_matcher;
 use crate::glob::path::PathMatcher;
 use crate::glob::path::PathMatchingState;
 
+/// Returns WPD devices whose name is matching the specified pattern, or
+/// returns all devices if the pattern was None.
 pub fn device_find_devices(
     manager: &Manager,
     pattern: Option<&str>,
@@ -29,6 +31,8 @@ pub fn device_find_devices(
     return Ok(devices);
 }
 
+/// Returns storage objects whose name is matching the specified pattern, or
+/// returns all storage objects if the pattern was None.
 pub fn device_find_storage_objects(
     device: &Device,
     pattern: Option<&str>,
@@ -42,15 +46,14 @@ pub fn device_find_storage_objects(
         None => return Ok(objects),
     };
 
-    let has_name_pattern = pattern.is_some();
-    let name_pattern = FileNamePattern::new(pattern.unwrap_or(""));
+    let name_pattern = FileNamePattern::new(pattern.unwrap_or("*"));
 
     let mut iter = device.get_object_iterator(&device_obj_info.content_object)?;
     while let Some(obj) = iter.next()? {
         log::trace!("  detected device object entry {:?}", &obj);
         let info = device.get_object_info(obj)?;
         log::trace!("   details {:?}", &info);
-        if info.is_storage() && (!has_name_pattern || name_pattern.matches(&info.name)) {
+        if info.is_storage() && name_pattern.matches(&info.name) {
             log::trace!("   --> storage object found");
             objects.push(info);
         }
@@ -74,6 +77,8 @@ fn device_find_device_object(
     Ok(None)
 }
 
+/// Returns the first matched object which is matching the specified path.
+/// Path can be the glob pattern.
 pub fn device_find_file_or_folder(
     device: &Device,
     storage_object: &ContentObjectInfo,

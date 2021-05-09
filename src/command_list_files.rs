@@ -13,6 +13,8 @@ pub fn command_list_files(
     recursive: bool,
     verbose: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    log::trace!("COMMAND list-files");
+
     let storage_path = DeviceStoragePath::from(&path)?;
 
     init_com()?;
