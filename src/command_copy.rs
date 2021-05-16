@@ -11,7 +11,7 @@ use crate::wpd::manager::Manager;
 use crate::wpd::utils::init_com;
 use crate::Paths;
 use crate::{
-    copy::destination::{DeviceDestinationFolder, LocalDestinationFolder},
+    copy::destination_folder::{DeviceDestinationFolder, LocalDestinationFolder},
     path::DeviceStoragePath,
 };
 
