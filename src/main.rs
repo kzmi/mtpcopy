@@ -154,7 +154,7 @@ fn usage_brief() -> Result<String, std::fmt::Error> {
     s.push_str("        <device-name>:<storage-name>:<path>\n");
     s.push_str("        e.g. \"My Device:SD Card:\\Pictures\\2021\\April\"\n");
     s.push_str("\n");
-    s.push_str("    For -l option, wildcard will be accepted:\n");
+    s.push_str("    In \"list\" command, the path can contain wildcard characters:\n");
     s.push_str("        e.g. \"My*:SD*:**\\2021\\**\\*.jpg\"\n");
     s.push_str("\n");
     s.push_str("    The other form will be used as the local path on your computer.");
