@@ -9,7 +9,7 @@ mod wpd;
 
 use std::fmt::Write;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 enum Command {
     None,
     ListStorages,
@@ -63,14 +63,13 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
         .optflag("h", "help", "show this help message.")
         .optflag("V", "version", "show version and exit.")
         .optflag(
-            "s",
-            "storages",
-            "list all storages on the connected portable devices.",
+            "R",
+            "recursive",
+            "(with \"list\" command) list subfolders recursively",
         )
-        .optflag("l", "list", "list files on the connected portable devices.")
-        .optflag("R", "recursive", "(with -l) list subfolders recursively")
         .optflagmulti("v", "verbose", "verbose output.");
-    let mut matches = options.parse(std::env::args().skip(1))?;
+
+    let matches = options.parse(std::env::args().skip(1))?;
 
     let mut help = matches.opt_present("help");
     let version = matches.opt_present("version");
@@ -79,36 +78,44 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
 
     let mut paths: Option<Paths> = None;
     let command: Command;
+
     if help || version {
         command = Command::None;
-    } else if matches.opt_present("storages") {
-        command = Command::ListStorages;
-    } else if matches.opt_present("list") {
-        if matches.free.len() == 0 {
-            help = true;
-            command = Command::None;
-        } else if matches.free.len() == 1 {
-            let src = matches.free.pop().unwrap();
-            let dest = "".to_string();
-            paths = Some(Paths { src, dest });
-            command = Command::ListFiles;
-        } else {
-            return Err(format!("bad option : {}", &matches.free[1]).into());
+    } else if matches.free.len() > 0 {
+        match find_command(&matches.free[0]) {
+            None => {
+                return Err(format!("unknwon command : {}", &matches.free[0]).into());
+            }
+            Some(cmd) => match cmd {
+                Command::ListFiles => {
+                    if matches.free.len() < 2 {
+                        return Err("(command \"list\") pattern is not specified".into());
+                    }
+                    let src = String::from(&matches.free[1]);
+                    let dest = String::from("");
+                    paths = Some(Paths { src, dest });
+                    command = cmd;
+                }
+                Command::Copy => {
+                    if matches.free.len() < 2 {
+                        return Err("(command \"copy\") source path is not specified".into());
+                    }
+                    if matches.free.len() < 3 {
+                        return Err("(command \"copy\") destination path is not specified".into());
+                    }
+                    let src = String::from(&matches.free[1]);
+                    let dest = String::from(&matches.free[2]);
+                    paths = Some(Paths { src, dest });
+                    command = cmd;
+                }
+                cmd => {
+                    command = cmd;
+                }
+            },
         }
     } else {
-        if matches.free.len() == 0 {
-            help = true;
-            command = Command::None;
-        } else if matches.free.len() == 1 {
-            return Err("destination path is not specified.".into());
-        } else if matches.free.len() == 2 {
-            let dest = matches.free.pop().unwrap();
-            let src = matches.free.pop().unwrap();
-            paths = Some(Paths { src, dest });
-            command = Command::Copy;
-        } else {
-            return Err(format!("bad option : {}", &matches.free[2]).into());
-        }
+        help = true;
+        command = Command::None;
     }
 
     if help {
@@ -130,20 +137,52 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
 fn usage_brief() -> Result<String, std::fmt::Error> {
     let bin_name = env!("CARGO_BIN_NAME");
     let mut s = String::new();
-    write!(&mut s, "Usage: {} [-hv]\n", bin_name)?;
-    write!(&mut s, "       {} [-s]\n", bin_name)?;
-    write!(&mut s, "       {} [-l] [-Rv] <path>\n", bin_name)?;
-    write!(&mut s, "       {} <source-path> <dest-path>\n", bin_name)?;
+    write!(&mut s, "Usage: {} [-hV]\n", bin_name)?;
+    write!(&mut s, "       {} copy <source-path> <dest-path>\n", bin_name)?;
+    write!(&mut s, "       {} storages\n", bin_name)?;
+    write!(&mut s, "       {} list [-Rv] <path>\n", bin_name)?;
     s.push_str("\n");
-    s.push_str("Path:\n");
-    s.push_str("    A path on the portable device must be specified as:\n");
+    s.push_str("Commands:\n");
+    s.push_str("    copy       copy files or folders recursively.\n");
+    s.push_str("               <dest-path> must be a path to the existing folder.\n");
+    s.push_str("    storages   list all storages for the all connecting portable devices.\n");
+    s.push_str("    list       list all file or folders matching the path.\n");
+    s.push_str("               <path> can contains wildcard (see below.)\n");
+    s.push_str("\n");
+    s.push_str("About Path:\n");
+    s.push_str("    A path on the portable device must be specified in this form:\n");
     s.push_str("        <device-name>:<storage-name>:<path>\n");
-    s.push_str("        e.g. \"PD-123:SD Card:/Pictures/2021/April\"\n");
-    s.push_str("        e.g. \"PD-???:*Card:/**/April\"\n");
-    s.push_str("    The other will be used as the local path on your computer.");
+    s.push_str("        e.g. \"My Device:SD Card:\\Pictures\\2021\\April\"\n");
+    s.push_str("\n");
+    s.push_str("    For -l option, wildcard will be accepted:\n");
+    s.push_str("        e.g. \"My*:SD*:**\\2021\\**\\*.jpg\"\n");
+    s.push_str("\n");
+    s.push_str("    The other form will be used as the local path on your computer.");
     Ok(s)
 }
 
 fn show_version() {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+}
+
+fn find_command(s: &str) -> Option<Command> {
+    let commands = [
+        ("copy", Command::Copy),
+        ("list", Command::ListFiles),
+        ("storages", Command::ListStorages),
+    ];
+    let mut matched: Vec<Command> = commands
+        .iter()
+        .filter(|&&(kw, _)| match kw.find(s) {
+            Some(n) if n == 0 => true,
+            _ => false,
+        })
+        .map(|&(_, cmdval)| cmdval)
+        .collect();
+
+    if matched.len() == 1 {
+        matched.pop()
+    } else {
+        None
+    }
 }
