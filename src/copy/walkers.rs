@@ -5,8 +5,10 @@ use chrono::{DateTime, Local, NaiveDateTime};
 
 use crate::wpd::device::{ContentObjectInfo, Device};
 
-use super::file_reader::{DeviceFileReader, LocalFileReader};
-use super::{destination_folder::DestinationFolder, file_info::FileInfo};
+use super::destination_folder::DestinationFolder;
+use super::device_file_reader::DeviceFileReader;
+use super::file_info::FileInfo;
+use super::local_file_reader::LocalFileReader;
 
 pub trait Walker {
     fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>>;
