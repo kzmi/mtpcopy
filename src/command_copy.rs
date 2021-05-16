@@ -20,6 +20,14 @@ pub fn command_copy(paths: &Paths) -> Result<(), Box<dyn std::error::Error>> {
 
     let src_path = paths.src.as_str();
     let dest_path = paths.dest.as_str();
+
+    if src_path.contains('*') || src_path.contains('?') {
+        return Err("the source path must not be the wildcard.".into());
+    }
+    if dest_path.contains('*') || dest_path.contains('?') {
+        return Err("the destination path must not be the wildcard.".into());
+    }
+
     let src_path_type = get_path_type(src_path);
     let dest_path_type = get_path_type(dest_path);
 
@@ -73,37 +81,48 @@ fn find_device_file_or_folder<'d>(
 ) -> Result<(Device, ContentObjectInfo), Box<dyn std::error::Error>> {
     let storage_path = DeviceStoragePath::from(path)?;
 
-    let device_vec = device_find_devices(manager, Some(&storage_path.device_name))?;
+    let mut device_vec = device_find_devices(manager, Some(&storage_path.device_name))?;
     if device_vec.len() == 0 {
-        return Err(format!("the {} device not found.", subject_type).into());
+        return Err(format!("the {} device was not found.", subject_type).into());
     }
     if device_vec.len() > 1 {
         return Err(format!("cannot determine the {} device.", subject_type).into());
     }
 
-    let device = Device::open(&device_vec[0])?;
+    let device_info = device_vec.pop().unwrap();
 
-    let storage_object_vec =
+    let device = Device::open(&device_info)?;
+
+    let mut storage_object_vec =
         device_find_storage_objects(&device, Some(&storage_path.storage_name))?;
     if storage_object_vec.len() == 0 {
-        return Err(format!("the {} storage not found.", subject_type).into());
+        return Err(format!("the {} storage was not found.", subject_type).into());
     }
     if storage_object_vec.len() > 1 {
         return Err(format!("cannot determine the {} storage.", subject_type).into());
     }
 
-    let object_opt =
-        device_find_file_or_folder(&device, &storage_object_vec[0], &storage_path.path)?;
-    if object_opt.is_none() {
+    let storage_object = storage_object_vec.pop().unwrap();
+
+    let find_file_or_folder_result =
+        device_find_file_or_folder(&device, &device_info, &storage_object, &storage_path.path)?;
+
+    if find_file_or_folder_result.is_none() {
         let message = if allow_file {
-            format!("the {} file or folder not found.", subject_type)
+            format!(
+                "the file or folder matching the {} path was not found.",
+                subject_type
+            )
         } else {
-            format!("the {} folder not found.", subject_type)
+            format!(
+                "the folder matching the {} path was not found.",
+                subject_type
+            )
         };
         return Err(message.into());
     }
 
-    let object_info = object_opt.unwrap();
+    let (object_info, _) = find_file_or_folder_result.unwrap();
     if object_info.is_system {
         return Err(format!("the {} path is a system file.", subject_type).into());
     }
@@ -130,9 +149,12 @@ fn check_local_path(
     let path_obj = Path::new(path);
     if !path_obj.exists() {
         let message = if allow_file {
-            format!("the {} file or directory not found.", subject_type)
+            format!(
+                "the file or directory matching the {} path was not found.",
+                subject_type
+            )
         } else {
-            format!("the {} directory not found.", subject_type)
+            format!("the {} directory was not found.", subject_type)
         };
         return Err(message.into());
     }

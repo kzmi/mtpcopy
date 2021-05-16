@@ -95,50 +95,28 @@ fn device_find_device_object(
 /// Path can be the glob pattern.
 pub fn device_find_file_or_folder(
     device: &Device,
+    device_info: &DeviceInfo,
     storage_object: &ContentObjectInfo,
     path: &str,
-) -> Result<Option<ContentObjectInfo>, Box<dyn std::error::Error>> {
-    let root_path_matcher = create_path_pattern_matcher(path)?;
-    let (state, next_matcher) = root_path_matcher.matches_root();
-    match state {
-        PathMatchingState::Rejected => return Ok(None),
-        PathMatchingState::Completed => return Ok(Some(storage_object.clone())),
-        PathMatchingState::Accepted => (),
-    }
-    device_find_file_or_folder_from(device, storage_object, &next_matcher.unwrap())
+) -> Result<Option<(ContentObjectInfo, String)>, Box<dyn std::error::Error>> {
+    let mut result: Option<(ContentObjectInfo, String)> = None;
+    device_iterate_file_or_folder(
+        device,
+        device_info,
+        storage_object,
+        path,
+        false,
+        |content_object_info, path| {
+            result = Some((content_object_info.clone(), String::from(path)));
+            Ok(false)
+        },
+    )?;
+    Ok(result)
 }
 
-fn device_find_file_or_folder_from(
-    device: &Device,
-    base: &ContentObjectInfo,
-    path_matcher: &PathMatcher,
-) -> Result<Option<ContentObjectInfo>, Box<dyn std::error::Error>> {
-    let mut next_levels = Vec::<(ContentObjectInfo, &PathMatcher)>::new();
-
-    let mut iter = device.get_object_iterator(&base.content_object)?;
-    while let Some(obj) = iter.next()? {
-        let info = device.get_object_info(obj)?;
-        if info.is_functional_object() {
-            continue;
-        }
-        let (state, next_matcher) = path_matcher.matches(&info.name, info.is_folder());
-        match state {
-            PathMatchingState::Rejected => continue,
-            PathMatchingState::Completed => return Ok(Some(info)),
-            PathMatchingState::Accepted => next_levels.push((info, next_matcher.unwrap())),
-        }
-    }
-
-    for (info, next_matcher) in next_levels.iter() {
-        let result = device_find_file_or_folder_from(device, info, next_matcher)?;
-        if result.is_some() {
-            return Ok(result);
-        }
-    }
-
-    Ok(None)
-}
-
+/// Iterates the file or folders which is matching the specified path,
+/// and calls given callback for each file or folders.
+/// Path can be the glob pattern.
 pub fn device_iterate_file_or_folder<F>(
     device: &Device,
     device_info: &DeviceInfo,
