@@ -50,11 +50,18 @@ pub fn command_list_files(
     Ok(())
 }
 
-fn show_file_or_folder_path_only(_info: &ContentObjectInfo, path: &str) {
+fn show_file_or_folder_path_only(
+    _info: &ContentObjectInfo,
+    path: &str,
+) -> Result<bool, Box<dyn std::error::Error>> {
     println!("{}", path);
+    Ok(true)
 }
 
-fn show_file_or_folder_with_details(info: &ContentObjectInfo, path: &str) {
+fn show_file_or_folder_with_details(
+    info: &ContentObjectInfo,
+    path: &str,
+) -> Result<bool, Box<dyn std::error::Error>> {
     println!(
         "[{:<4}] {:<19} {:<19} {}{} {}",
         if info.is_file() {
@@ -70,6 +77,7 @@ fn show_file_or_folder_with_details(info: &ContentObjectInfo, path: &str) {
         if info.is_hidden { "H" } else { "-" },
         path
     );
+    Ok(true)
 }
 
 fn format_datetime_opt(opt: &Option<NaiveDateTime>) -> String {
