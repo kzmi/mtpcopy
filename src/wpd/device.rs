@@ -116,6 +116,7 @@ pub struct Device {
     content: IPortableDeviceContent,
     properties: IPortableDeviceProperties,
     resources: IPortableDeviceResources,
+    pub name: String,
 }
 
 impl Device {
@@ -149,6 +150,7 @@ impl Device {
             content,
             properties,
             resources,
+            name: info.name.clone(),
         })
     }
 
