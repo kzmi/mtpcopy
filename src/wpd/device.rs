@@ -121,6 +121,8 @@ pub struct Device {
 
 impl Device {
     pub fn open(info: &DeviceInfo) -> Result<Device, Error> {
+        log::trace!("open Device ({})", &info.name);
+
         let device: IPortableDevice = co_create_instance(&PortableDevice)?;
         let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
         unsafe {
@@ -509,6 +511,7 @@ impl Device {
 
 impl Drop for Device {
     fn drop(&mut self) {
+        log::trace!("drop Device ({})", &self.name);
         unsafe {
             let _ = self.device.Close();
         }
