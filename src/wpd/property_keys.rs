@@ -1,4 +1,4 @@
-use bindings::Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY;
+use bindings::Windows::Win32::System::PropertiesSystem::PROPERTYKEY;
 use windows::Guid;
 
 const fn define_propertykey(

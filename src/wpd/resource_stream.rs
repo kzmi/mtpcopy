@@ -1,7 +1,5 @@
-use bindings::Windows::Win32::{
-    StructuredStorage::{IStream, STGC},
-    WindowsPortableDevices::IPortableDeviceDataStream,
-};
+use bindings::Windows::Win32::Storage::StructuredStorage::{IStream, STGC_DEFAULT};
+use bindings::Windows::Win32::Devices::PortableDevices::IPortableDeviceDataStream;
 use windows::Error;
 use windows::Interface;
 
@@ -85,7 +83,7 @@ impl ResourceWriter {
     pub fn commit(&mut self) -> Result<ContentObject, Error> {
         self.committed = true;
         unsafe {
-            self.stream.Commit(STGC::STGC_DEFAULT.0 as u32).ok()?;
+            self.stream.Commit(STGC_DEFAULT.0 as u32).ok()?;
         }
 
         let data_stream: IPortableDeviceDataStream = self.stream.cast()?;

@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
-use bindings::Windows::Win32::WindowsPortableDevices::{
+use bindings::Windows::Win32::Devices::PortableDevices::{
     IPortableDeviceManager, PortableDeviceManager,
 };
-use bindings::Windows::Win32::SystemServices::PWSTR;
+use bindings::Windows::Win32::System::SystemServices::PWSTR;
 use windows::Error;
 
 use super::utils::*;

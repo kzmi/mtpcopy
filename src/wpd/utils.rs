@@ -1,5 +1,5 @@
-use bindings::Windows::Win32::Com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX};
-use bindings::Windows::Win32::SystemServices::PWSTR;
+use bindings::Windows::Win32::System::Com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX_INPROC_SERVER};
+use bindings::Windows::Win32::System::SystemServices::PWSTR;
 use std::{
     fmt::{Debug, Write},
     sync::atomic::{AtomicBool, Ordering},
@@ -26,7 +26,7 @@ pub fn co_create_instance<T>(clsid: &Guid) -> Result<T, Error>
 where
     T: Interface,
 {
-    unsafe { CoCreateInstance(clsid, None, CLSCTX::CLSCTX_INPROC_SERVER) }
+    unsafe { CoCreateInstance(clsid, None, CLSCTX_INPROC_SERVER) }
 }
 
 /// Manages object ID (WCHAR string which ends with a NULL terminator)

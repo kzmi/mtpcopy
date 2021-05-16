@@ -1,14 +1,21 @@
 fn main() {
     windows::build!(
-        Windows::Win32::Com::{
-            CoInitialize, CoCreateInstance, CoTaskMemFree,
+        Windows::Win32::System::Com::{
+            CoInitialize, CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER,
         },
-        Windows::Win32::FileSystem::{
+        Windows::Win32::Storage::FileSystem::{
             CreateFileW,
+            FILE_ATTRIBUTE_NORMAL,
+            FILE_GENERIC_READ,
+            FILE_GENERIC_WRITE,
+            FILE_SHARE_NONE,
+            OPEN_EXISTING,
         },
-        Windows::Win32::StructuredStorage::{IStream, STGC, PROPVARIANT},
-        Windows::Win32::SystemServices::{S_OK},
-        Windows::Win32::WindowsPortableDevices::{
+        Windows::Win32::Storage::StructuredStorage::{
+            IStream, STGC_DEFAULT, PROPVARIANT
+        },
+        Windows::Win32::System::SystemServices::{S_OK},
+        Windows::Win32::Devices::PortableDevices::{
             IEnumPortableDeviceObjectIDs,
             IPortableDevice,
             IPortableDeviceContent,
@@ -24,13 +31,13 @@ fn main() {
             PortableDeviceManager,
             PortableDevicePropVariantCollection,
             PortableDeviceValues,
-            DELETE_OBJECT_OPTIONS,
+            PORTABLE_DEVICE_DELETE_WITH_RECURSION,
         },
-        Windows::Win32::WindowsProgramming::{
+        Windows::Win32::System::WindowsProgramming::{
             CloseHandle,
             SetFileTime,
             SystemTimeToFileTime,
         },
-        Windows::Win32::WindowsPropertiesSystem::{PROPERTYKEY},
+        Windows::Win32::System::PropertiesSystem::{PROPERTYKEY},
     );
 }

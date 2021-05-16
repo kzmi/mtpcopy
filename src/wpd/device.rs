@@ -1,14 +1,14 @@
-use bindings::Windows::Win32::StructuredStorage::{
+use bindings::Windows::Win32::Storage::StructuredStorage::{
     IStream, PROPVARIANT_0_0_0_abi, PROPVARIANT_0_0_abi, PROPVARIANT, PROPVARIANT_0,
 };
-use bindings::Windows::Win32::SystemServices::{BOOL, S_OK};
-use bindings::Windows::Win32::WindowsPortableDevices::{
+use bindings::Windows::Win32::System::SystemServices::{BOOL, S_OK};
+use bindings::Windows::Win32::Devices::PortableDevices::{
     IEnumPortableDeviceObjectIDs, IPortableDevice, IPortableDeviceContent,
     IPortableDeviceKeyCollection, IPortableDevicePropVariantCollection, IPortableDeviceProperties,
     IPortableDeviceResources, IPortableDeviceValues, PortableDevice, PortableDeviceKeyCollection,
-    PortableDevicePropVariantCollection, PortableDeviceValues, DELETE_OBJECT_OPTIONS,
+    PortableDevicePropVariantCollection, PortableDeviceValues, PORTABLE_DEVICE_DELETE_WITH_RECURSION,
 };
-use bindings::Windows::Win32::WindowsPropertiesSystem::PROPERTYKEY;
+use bindings::Windows::Win32::System::PropertiesSystem::PROPERTYKEY;
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::Parsed;
 use chrono::naive::NaiveDateTime;
@@ -497,7 +497,7 @@ impl Device {
             collection.Add(&propvar).ok()?;
             self.content
                 .Delete(
-                    DELETE_OBJECT_OPTIONS::PORTABLE_DEVICE_DELETE_WITH_RECURSION.0 as u32,
+                    PORTABLE_DEVICE_DELETE_WITH_RECURSION.0 as u32,
                     &collection,
                     std::ptr::null_mut(),
                 )

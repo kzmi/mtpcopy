@@ -1,9 +1,9 @@
-use bindings::Windows::Win32::FileSystem::{
-    CreateFileW, FILE_ACCESS_FLAGS, FILE_CREATION_DISPOSITION, FILE_FLAGS_AND_ATTRIBUTES,
-    FILE_SHARE_MODE,
+use bindings::Windows::Win32::Storage::FileSystem::{
+    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_NONE,
+    OPEN_EXISTING,
 };
-use bindings::Windows::Win32::SystemServices::{HANDLE, PWSTR};
-use bindings::Windows::Win32::WindowsProgramming::{
+use bindings::Windows::Win32::System::SystemServices::{HANDLE, PWSTR};
+use bindings::Windows::Win32::System::WindowsProgramming::{
     CloseHandle, SetFileTime, SystemTimeToFileTime, FILETIME, SYSTEMTIME,
 };
 use chrono::{Datelike, Local, NaiveDateTime, TimeZone, Timelike, Utc};
@@ -137,14 +137,11 @@ impl WindowsSetFileTime {
         let handle = unsafe {
             CreateFileW(
                 PWSTR(path_w.as_mut_ptr()),
-                FILE_ACCESS_FLAGS {
-                    0: FILE_ACCESS_FLAGS::FILE_GENERIC_READ.0
-                        | FILE_ACCESS_FLAGS::FILE_GENERIC_WRITE.0,
-                },
-                FILE_SHARE_MODE::FILE_SHARE_NONE,
+                FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+                FILE_SHARE_NONE,
                 std::ptr::null_mut(),
-                FILE_CREATION_DISPOSITION::OPEN_EXISTING,
-                FILE_FLAGS_AND_ATTRIBUTES::FILE_ATTRIBUTE_NORMAL,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
                 HANDLE { 0: 0 },
             )
         };
