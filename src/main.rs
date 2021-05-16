@@ -35,7 +35,7 @@ fn main() {
     pretty_env_logger::init();
     let result = run();
     if let Err(err) = result {
-        log::error!("{}", err.to_string());
+        log::error!("{}", err);
         std::process::exit(1);
     }
 }
