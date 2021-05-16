@@ -1,19 +1,18 @@
 use std::os::windows::prelude::MetadataExt;
 use std::path::Path;
 
+use crate::copy::device_destination_folder::DeviceDestinationFolder;
+use crate::copy::local_destination_folder::LocalDestinationFolder;
 use crate::copy::walkers::{DeviceWalker, LocalWalker, Walker};
 use crate::finders::*;
 use crate::path::get_path_type;
+use crate::path::DeviceStoragePath;
 use crate::path::PathType;
+use crate::wpd::device::ContentObjectInfo;
 use crate::wpd::device::Device;
-use crate::wpd::device::{ContentObjectInfo};
 use crate::wpd::manager::Manager;
 use crate::wpd::utils::init_com;
 use crate::Paths;
-use crate::{
-    copy::destination_folder::{DeviceDestinationFolder, LocalDestinationFolder},
-    path::DeviceStoragePath,
-};
 
 pub fn command_copy(paths: &Paths) -> Result<(), Box<dyn std::error::Error>> {
     init_com()?;
