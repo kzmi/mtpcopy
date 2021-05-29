@@ -2,8 +2,10 @@ use std::os::windows::prelude::MetadataExt;
 use std::path::Path;
 
 use crate::copy::device_destination_folder::DeviceDestinationFolder;
+use crate::copy::device_walker::DeviceWalker;
 use crate::copy::local_destination_folder::LocalDestinationFolder;
-use crate::copy::walkers::{DeviceWalker, LocalWalker, Walker};
+use crate::copy::local_walker::LocalWalker;
+use crate::copy::walker::Walker;
 use crate::finders::*;
 use crate::path::get_path_type;
 use crate::path::DeviceStoragePath;

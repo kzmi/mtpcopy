@@ -7,6 +7,7 @@ use super::file_info::FileInfo;
 use super::file_reader::FileReader;
 
 use super::destination_folder::DestinationFolder;
+
 pub struct DeviceDestinationFolder<'d> {
     device: &'d Device,
     folder_object_info: ContentObjectInfo,
