@@ -148,10 +148,13 @@ where
                         log::warn!("failed to open: {}", &storage_path);
                     }
                     Ok(iter) => {
-                        let _ = iterate_file_or_folder_recursively(
+                        let matcher = PathMatcher::CompleteMatcher;
+                        let _ = iterate_file_or_folder(
                             device,
                             iter,
+                            &matcher,
                             storage_path,
+                            recursive,
                             &mut callback,
                         )?;
                     }
@@ -224,10 +227,13 @@ where
                             log::warn!("failed to open: {}", &next_base_path);
                         }
                         Ok(iter) => {
-                            continued = iterate_file_or_folder_recursively(
+                            let matcher = PathMatcher::CompleteMatcher;
+                            continued = iterate_file_or_folder(
                                 device,
                                 iter,
+                                &matcher,
                                 next_base_path,
+                                recursive,
                                 callback,
                             )?;
                             if !continued {
@@ -264,54 +270,6 @@ where
     }
     log::trace!(
         "iterate_file_or_folder {} base_path={}",
-        if continued { "end" } else { "stop" },
-        &base_path
-    );
-    Ok(continued)
-}
-
-fn iterate_file_or_folder_recursively<F>(
-    device: &Device,
-    mut content_object_iterator: ContentObjectIterator,
-    base_path: String,
-    callback: &mut F,
-) -> Result<bool, Box<dyn std::error::Error>>
-where
-    F: FnMut(&ContentObjectInfo, &str) -> Result<bool, Box<dyn std::error::Error>>,
-{
-    log::trace!(
-        "iterate_file_or_folder_recursively start base_path={}",
-        &base_path
-    );
-    let mut continued = true;
-    while let Some(content_object) = content_object_iterator.next()? {
-        let content_object_info = device.get_object_info(content_object)?;
-        if !content_object_info.is_file() && !content_object_info.is_folder() {
-            continue;
-        }
-
-        let path = join_path(&base_path, &content_object_info.name);
-        continued = callback(&content_object_info, &path)?;
-        if !continued {
-            break;
-        }
-        if content_object_info.is_folder() {
-            match device.get_object_iterator(&content_object_info.content_object) {
-                Err(err) => {
-                    log::debug!("{}", err);
-                    log::warn!("failed to open: {}", &path);
-                }
-                Ok(iter) => {
-                    continued = iterate_file_or_folder_recursively(device, iter, path, callback)?;
-                    if !continued {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    log::trace!(
-        "iterate_file_or_folder_recursively {} base_path={}",
         if continued { "end" } else { "stop" },
         &base_path
     );

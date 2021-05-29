@@ -107,6 +107,10 @@ pub enum PathMatcher {
     AnyDirectoriesMatcher {
         next: Box<PathMatcher>,
     },
+
+    // Special matcher that returns "Completed" for any input.
+    // This matcher will be used for traversing file-system hierarchy.
+    CompleteMatcher,
 }
 
 impl PathMatcher {
@@ -155,6 +159,8 @@ impl PathMatcher {
                     _ => (next_state, next_matcher),
                 }
             }
+
+            PathMatcher::CompleteMatcher => (PathMatchingState::Completed, None),
         }
     }
 
@@ -181,6 +187,8 @@ impl PathMatcher {
             },
 
             PathMatcher::AnyDirectoriesMatcher { next } => Some(next),
+
+            PathMatcher::CompleteMatcher => None,
         }
     }
 }
@@ -234,6 +242,11 @@ mod tests {
 
                 PathMatcher::AnyDirectoriesMatcher { next: _ } => match expected_matcher {
                     PathMatcher::AnyDirectoriesMatcher { next: _ } => (),
+                    _ => panic!(),
+                },
+
+                PathMatcher::CompleteMatcher => match expected_matcher {
+                    PathMatcher::CompleteMatcher => (),
                     _ => panic!(),
                 },
                 // _ => panic!(),
@@ -497,6 +510,19 @@ mod tests {
 
         // also directory "bbb" matches the pattern (/aaa/ccc/ddd/bbb)
         let (state, next_matcher) = base_matcher.matches("bbb", true);
+        assert_eq!(PathMatchingState::Completed, state);
+        assert!(next_matcher.is_none());
+    }
+
+    #[test]
+    fn test_complete_matcher() {
+        let base_matcher = PathMatcher::CompleteMatcher;
+
+        let (state, next_matcher) = base_matcher.matches("aaa", true);
+        assert_eq!(PathMatchingState::Completed, state);
+        assert!(next_matcher.is_none());
+
+        let (state, next_matcher) = base_matcher.matches("bbb", false);
         assert_eq!(PathMatchingState::Completed, state);
         assert!(next_matcher.is_none());
     }
