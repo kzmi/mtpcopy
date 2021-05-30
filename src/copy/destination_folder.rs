@@ -6,12 +6,12 @@ use super::file_reader::FileReader;
 pub trait DestinationFolder {
     fn get_file_info(
         &mut self,
-        name: &String,
+        name: &str,
     ) -> Result<Option<FileInfo>, Box<dyn std::error::Error>>;
 
     fn create_file(
         &mut self,
-        name: &String,
+        name: &str,
         reader: &mut impl FileReader,
         size: u64,
         created: &Option<NaiveDateTime>,
@@ -20,8 +20,8 @@ pub trait DestinationFolder {
 
     fn open_or_create_folder(
         &mut self,
-        name: &String,
+        name: &str,
     ) -> Result<Box<Self>, Box<dyn std::error::Error>>;
 
-    fn delete_file_or_folder(&mut self, name: &String) -> Result<(), Box<dyn std::error::Error>>;
+    fn delete_file_or_folder(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>>;
 }

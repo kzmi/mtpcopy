@@ -37,7 +37,7 @@ impl<'d> DeviceDestinationFolder<'d> {
 impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
     fn get_file_info(
         &mut self,
-        name: &String,
+        name: &str,
     ) -> Result<Option<FileInfo>, Box<dyn std::error::Error>> {
         match self.entry_map.get(name) {
             None => Ok(None),
@@ -47,7 +47,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
 
     fn create_file(
         &mut self,
-        name: &String,
+        name: &str,
         reader: &mut impl FileReader,
         size: u64,
         created: &Option<NaiveDateTime>,
@@ -74,7 +74,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
 
     fn open_or_create_folder(
         &mut self,
-        name: &String,
+        name: &str,
     ) -> Result<Box<Self>, Box<dyn std::error::Error>> {
         match self.entry_map.get(name) {
             None => {
@@ -100,7 +100,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
         }
     }
 
-    fn delete_file_or_folder(&mut self, name: &String) -> Result<(), Box<dyn std::error::Error>> {
+    fn delete_file_or_folder(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(object_info) = self.entry_map.get(name) {
             self.device.delete(&object_info.content_object)?;
             self.entry_map.remove(name);

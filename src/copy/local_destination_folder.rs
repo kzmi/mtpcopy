@@ -30,7 +30,7 @@ impl LocalDestinationFolder {
 impl DestinationFolder for LocalDestinationFolder {
     fn get_file_info(
         &mut self,
-        name: &String,
+        name: &str,
     ) -> Result<Option<FileInfo>, Box<dyn std::error::Error>> {
         let path_buf = Path::new(&self.folder_path).join(name);
         if let Ok(metadata) = path_buf.metadata() {
@@ -42,7 +42,7 @@ impl DestinationFolder for LocalDestinationFolder {
 
     fn create_file(
         &mut self,
-        name: &String,
+        name: &str,
         reader: &mut impl FileReader,
         #[allow(unused_variables)] size: u64,
         created: &Option<NaiveDateTime>,
@@ -74,7 +74,7 @@ impl DestinationFolder for LocalDestinationFolder {
 
     fn open_or_create_folder(
         &mut self,
-        name: &String,
+        name: &str,
     ) -> Result<Box<Self>, Box<dyn std::error::Error>> {
         let path_buf = Path::new(&self.folder_path).join(name);
 
@@ -88,7 +88,7 @@ impl DestinationFolder for LocalDestinationFolder {
         Ok(Box::new(LocalDestinationFolder::new(path_buf)))
     }
 
-    fn delete_file_or_folder(&mut self, name: &String) -> Result<(), Box<dyn std::error::Error>> {
+    fn delete_file_or_folder(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
         let path_buf = Path::new(&self.folder_path).join(name);
 
         if path_buf.is_file() {
