@@ -4,6 +4,7 @@ use super::{destination_folder::DestinationFolder, file_info::FileInfo};
 
 pub trait CopyProcessor {
     fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>>;
+    fn copy_as(&self, name: &str, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 pub fn can_skip_copying(src_file_info: &FileInfo, dest_file_info: &FileInfo) -> bool {
