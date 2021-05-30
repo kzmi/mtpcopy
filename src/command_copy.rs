@@ -1,11 +1,11 @@
 use std::os::windows::prelude::MetadataExt;
 use std::path::Path;
 
+use crate::copy::copy_processor::CopyProcessor;
+use crate::copy::device_copy_processor::DeviceCopyProcessor;
 use crate::copy::device_destination_folder::DeviceDestinationFolder;
-use crate::copy::device_walker::DeviceWalker;
+use crate::copy::local_copy_processor::LocalCopyProcessor;
 use crate::copy::local_destination_folder::LocalDestinationFolder;
-use crate::copy::local_walker::LocalWalker;
-use crate::copy::walker::Walker;
 use crate::finders::*;
 use crate::path::get_path_type;
 use crate::path::DeviceStoragePath;
@@ -37,13 +37,13 @@ pub fn command_copy(paths: &Paths) -> Result<(), Box<dyn std::error::Error>> {
         PathType::DeviceStorage => {
             let (device, object_info) =
                 find_device_file_or_folder(&manager, src_path, "source", true)?;
-            let walker = DeviceWalker::new(&device, object_info);
-            do_walk(&manager, &walker, dest_path, dest_path_type)
+            let processor = DeviceCopyProcessor::new(&device, object_info);
+            do_copy(&manager, &processor, dest_path, dest_path_type)
         }
         PathType::Local => {
             check_local_path(src_path, "source", true)?;
-            let walker = LocalWalker::new(src_path);
-            do_walk(&manager, &walker, dest_path, dest_path_type)
+            let processor = LocalCopyProcessor::new(src_path);
+            do_copy(&manager, &processor, dest_path, dest_path_type)
         }
         PathType::Invalid => {
             return Err("invalid source path.".into());
@@ -51,9 +51,9 @@ pub fn command_copy(paths: &Paths) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn do_walk(
+fn do_copy(
     manager: &Manager,
-    walker: &impl Walker,
+    processor: &impl CopyProcessor,
     dest_path: &str,
     dest_path_type: PathType,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -62,12 +62,12 @@ fn do_walk(
             let (device, object_info) =
                 find_device_file_or_folder(manager, dest_path, "destination", false)?;
             let mut dest = DeviceDestinationFolder::new(&device, object_info)?;
-            walker.copy(&mut dest)
+            processor.copy(&mut dest)
         }
         PathType::Local => {
             check_local_path(dest_path, "destination", false)?;
             let mut dest = LocalDestinationFolder::new(dest_path.into());
-            walker.copy(&mut dest)
+            processor.copy(&mut dest)
         }
         PathType::Invalid => {
             return Err("invalid destination path.".into());

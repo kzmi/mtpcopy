@@ -4,29 +4,29 @@ use super::destination_folder::DestinationFolder;
 use super::device_file_reader::DeviceFileReader;
 use super::file_info::FileInfo;
 
-use super::walker::{Walker, can_skip_copying, report_copying_end, report_copying_start};
+use super::copy_processor::{CopyProcessor, can_skip_copying, report_copying_end, report_copying_start};
 
-pub struct DeviceWalker<'d> {
+pub struct DeviceCopyProcessor<'d> {
     device: &'d Device,
     source_root_object_info: ContentObjectInfo,
 }
 
-impl<'d> DeviceWalker<'d> {
-    pub fn new(device: &'d Device, source_root_object_info: ContentObjectInfo) -> DeviceWalker<'d> {
-        DeviceWalker {
+impl<'d> DeviceCopyProcessor<'d> {
+    pub fn new(device: &'d Device, source_root_object_info: ContentObjectInfo) -> Self {
+        Self {
             device,
             source_root_object_info,
         }
     }
 }
 
-impl<'d> Walker for DeviceWalker<'d> {
+impl<'d> CopyProcessor for DeviceCopyProcessor<'d> {
     fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>> {
-        device_walker_do_copy(self.device, dest, &self.source_root_object_info)
+        copy_hierarchy(self.device, dest, &self.source_root_object_info)
     }
 }
 
-fn device_walker_do_copy(
+fn copy_hierarchy(
     device: &Device,
     dest: &mut impl DestinationFolder,
     target_object_info: &ContentObjectInfo,
@@ -72,7 +72,7 @@ fn device_walker_do_copy(
     let mut iter = device.get_object_iterator(&target_object_info.content_object)?;
     while let Some(content_object) = iter.next()? {
         let content_object_info = device.get_object_info(content_object)?;
-        device_walker_do_copy(device, new_dest.as_mut(), &content_object_info)?;
+        copy_hierarchy(device, new_dest.as_mut(), &content_object_info)?;
     }
     Ok(())
 }

@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 
 use super::{destination_folder::DestinationFolder, file_info::FileInfo};
 
-pub trait Walker {
+pub trait CopyProcessor {
     fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>>;
 }
 

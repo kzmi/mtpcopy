@@ -7,27 +7,27 @@ use super::destination_folder::DestinationFolder;
 use super::file_info::FileInfo;
 use super::local_file_reader::LocalFileReader;
 
-use super::walker::{Walker, can_skip_copying, report_copying_end, report_copying_start};
+use super::copy_processor::{CopyProcessor, can_skip_copying, report_copying_end, report_copying_start};
 
-pub struct LocalWalker {
+pub struct LocalCopyProcessor {
     path: PathBuf,
 }
 
-impl LocalWalker {
-    pub fn new(path: &str) -> LocalWalker {
-        LocalWalker {
+impl LocalCopyProcessor {
+    pub fn new(path: &str) -> Self {
+        Self {
             path: PathBuf::from(path),
         }
     }
 }
 
-impl Walker for LocalWalker {
+impl CopyProcessor for LocalCopyProcessor {
     fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>> {
-        local_walker_do_copy(&self.path, dest)
+        copy_hierarchy(&self.path, dest)
     }
 }
 
-fn local_walker_do_copy(
+fn copy_hierarchy(
     path: &PathBuf,
     dest: &mut impl DestinationFolder,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -81,7 +81,7 @@ fn local_walker_do_copy(
     for result in std::fs::read_dir(path)? {
         let entry = result?;
         let new_path = entry.path();
-        local_walker_do_copy(&new_path, new_dest.as_mut())?;
+        copy_hierarchy(&new_path, new_dest.as_mut())?;
     }
     Ok(())
 }
