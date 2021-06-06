@@ -92,7 +92,7 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
                         return Err("(command \"list\") pattern is not specified".into());
                     }
                     let src = String::from(&matches.free[1]);
-                    let dest = String::from("");
+                    let dest = String::new();
                     paths = Some(Paths { src, dest });
                     command = cmd;
                 }

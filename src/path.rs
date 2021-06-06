@@ -1,4 +1,7 @@
-#[derive(Debug, Eq, PartialEq)]
+pub const SEPARATORS: &[char] = &['\\', '/'];
+pub const WILDCARD_CHARACTERS: &[char] = &['*', '?'];
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PathType {
     Invalid,
     DeviceStorage,
@@ -16,6 +19,7 @@ pub fn get_path_type(path: &str) -> PathType {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct DeviceStoragePath {
     pub device_name: String,
     pub storage_name: String,
@@ -24,7 +28,7 @@ pub struct DeviceStoragePath {
 
 impl DeviceStoragePath {
     pub fn from(path: &str) -> Result<DeviceStoragePath, Box<dyn std::error::Error>> {
-        let mut path_sep: Vec<String> = path.split(":").map(|s| s.to_string()).collect();
+        let mut path_sep: Vec<String> = path.split(':').map(|s| s.to_string()).collect();
         if path_sep.len() != 3 {
             return Err("invalid device storage path format.".into());
         }

@@ -80,7 +80,7 @@ impl DestinationFolder for LocalDestinationFolder {
 
         if path_buf.exists() {
             if !path_buf.is_dir() {
-                return Err(format!("Cannot open a folder: {}", path_buf.to_string_lossy()).into());
+                return Err(format!("cannot open a folder: {}", path_buf.to_str().unwrap()).into());
             }
         } else {
             std::fs::create_dir_all(&path_buf)?;

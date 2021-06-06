@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use crate::path::SEPARATORS;
+
 use super::filename::FileNamePattern;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -28,7 +30,7 @@ pub fn create_path_pattern_matcher(
     let components: Vec<&str> = if pat_str == "" {
         Vec::<&str>::new()
     } else {
-        pat_str.split(&['/', '\\'][..]).collect()
+        pat_str.split(SEPARATORS).collect()
     };
 
     let mut next: Option<Box<PathMatcher>> = None;
