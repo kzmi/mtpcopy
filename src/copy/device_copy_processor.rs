@@ -23,21 +23,19 @@ impl<'d> DeviceCopyProcessor<'d> {
 }
 
 impl<'d> CopyProcessor for DeviceCopyProcessor<'d> {
-    fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>> {
-        copy_hierarchy(
-            self.device,
-            dest,
-            &self.source_root_object_info,
-            &self.source_root_object_info.name,
-        )
-    }
-
     fn copy_as(
         &self,
         name: &str,
         dest: &mut impl DestinationFolder,
+        recursive: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        copy_hierarchy(self.device, dest, &self.source_root_object_info, name)
+        copy_hierarchy(
+            self.device,
+            dest,
+            &self.source_root_object_info,
+            name,
+            recursive,
+        )
     }
 }
 
@@ -46,6 +44,7 @@ fn copy_hierarchy(
     dest: &mut impl DestinationFolder,
     target_object_info: &ContentObjectInfo,
     dest_name: &str,
+    recursive: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if target_object_info.is_system || target_object_info.is_hidden {
         return Ok(());
@@ -79,21 +78,22 @@ fn copy_hierarchy(
         return Ok(());
     }
 
-    if !target_object_info.is_folder() {
-        return Ok(());
-    }
+    if target_object_info.is_folder() {
+        let mut new_dest = dest.open_or_create_folder(dest_name)?;
 
-    let mut new_dest = dest.open_or_create_folder(dest_name)?;
-
-    let mut iter = device.get_object_iterator(&target_object_info.content_object)?;
-    while let Some(content_object) = iter.next()? {
-        let content_object_info = device.get_object_info(content_object)?;
-        copy_hierarchy(
-            device,
-            new_dest.as_mut(),
-            &content_object_info,
-            &content_object_info.name,
-        )?;
+        if recursive {
+            let mut iter = device.get_object_iterator(&target_object_info.content_object)?;
+            while let Some(content_object) = iter.next()? {
+                let content_object_info = device.get_object_info(content_object)?;
+                copy_hierarchy(
+                    device,
+                    new_dest.as_mut(),
+                    &content_object_info,
+                    &content_object_info.name,
+                    recursive,
+                )?;
+            }
+        }
     }
     Ok(())
 }

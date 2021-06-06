@@ -24,17 +24,13 @@ impl LocalCopyProcessor {
 }
 
 impl CopyProcessor for LocalCopyProcessor {
-    fn copy(&self, dest: &mut impl DestinationFolder) -> Result<(), Box<dyn std::error::Error>> {
-        let dest_file_name = self.path.file_name().unwrap().to_str().unwrap();
-        copy_hierarchy(&self.path, dest, dest_file_name)
-    }
-
     fn copy_as(
         &self,
         name: &str,
         dest: &mut impl DestinationFolder,
+        recursive: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        copy_hierarchy(&self.path, dest, name)
+        copy_hierarchy(&self.path, dest, name, recursive)
     }
 }
 
@@ -42,6 +38,7 @@ fn copy_hierarchy(
     path: &PathBuf,
     dest: &mut impl DestinationFolder,
     dest_name: &str,
+    recursive: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let metadata = path.metadata()?;
     let file_attr = metadata.file_attributes();
@@ -84,17 +81,17 @@ fn copy_hierarchy(
         return Ok(());
     }
 
-    if !metadata.is_dir() {
-        return Ok(());
-    }
+    if metadata.is_dir() {
+        let mut new_dest = dest.open_or_create_folder(dest_name)?;
 
-    let mut new_dest = dest.open_or_create_folder(dest_name)?;
-
-    for result in std::fs::read_dir(path)? {
-        let entry = result?;
-        let new_path = entry.path();
-        let dest_file_name = new_path.file_name().unwrap().to_str().unwrap();
-        copy_hierarchy(&new_path, new_dest.as_mut(), dest_file_name)?;
+        if recursive {
+            for result in std::fs::read_dir(path)? {
+                let entry = result?;
+                let new_path = entry.path();
+                let dest_file_name = new_path.file_name().unwrap().to_str().unwrap();
+                copy_hierarchy(&new_path, new_dest.as_mut(), dest_file_name, recursive)?;
+            }
+        }
     }
     Ok(())
 }

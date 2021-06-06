@@ -51,7 +51,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             args.verbose,
         )?,
 
-        Command::Copy => command_copy::command_copy(&args.paths.unwrap())?,
+        Command::Copy => command_copy::command_copy(&args.paths.unwrap(), args.recursive)?,
         _ => {}
     };
     Ok(())
@@ -65,7 +65,7 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
         .optflag(
             "R",
             "recursive",
-            "(with \"list\" command) list subfolders recursively",
+            "(with \"list\" command or \"copy\" command) process recursively",
         )
         .optflagmulti("v", "verbose", "verbose output.");
 
@@ -138,13 +138,12 @@ fn usage_brief() -> Result<String, std::fmt::Error> {
     let bin_name = env!("CARGO_BIN_NAME");
     let mut s = String::new();
     write!(&mut s, "Usage: {} [-hV]\n", bin_name)?;
-    write!(&mut s, "       {} copy <source-path> <dest-path>\n", bin_name)?;
+    write!(&mut s, "       {} copy [-R] <source-path> <dest-path>\n", bin_name)?;
     write!(&mut s, "       {} storages\n", bin_name)?;
     write!(&mut s, "       {} list [-Rv] <path>\n", bin_name)?;
     s.push_str("\n");
     s.push_str("Commands:\n");
-    s.push_str("    copy       copy files or folders recursively.\n");
-    s.push_str("               <dest-path> must be a path to the existing folder.\n");
+    s.push_str("    copy       copy files or folders.\n");
     s.push_str("    storages   list all storages for the all connecting portable devices.\n");
     s.push_str("    list       list all file or folders matching the path.\n");
     s.push_str("               <path> can contains wildcard (see below.)\n");
