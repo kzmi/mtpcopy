@@ -149,7 +149,7 @@ where
                     }
                     Ok(iter) => {
                         let matcher = PathMatcher::CompleteMatcher;
-                        let _ = iterate_file_or_folder(
+                        let _ = device_iterate_file_or_folder_core(
                             device,
                             iter,
                             &matcher,
@@ -169,7 +169,7 @@ where
                     log::warn!("failed to open: {}", &storage_path);
                 }
                 Ok(iter) => {
-                    let _ = iterate_file_or_folder(
+                    let _ = device_iterate_file_or_folder_core(
                         device,
                         iter,
                         next_matcher.unwrap(),
@@ -184,7 +184,7 @@ where
     }
 }
 
-fn iterate_file_or_folder<F>(
+fn device_iterate_file_or_folder_core<F>(
     device: &Device,
     mut content_object_iterator: ContentObjectIterator,
     path_matcher: &PathMatcher,
@@ -195,7 +195,7 @@ fn iterate_file_or_folder<F>(
 where
     F: FnMut(&ContentObjectInfo, &str) -> Result<bool, Box<dyn std::error::Error>>,
 {
-    log::trace!("iterate_file_or_folder start base_path={}", &base_path);
+    log::trace!("device_iterate_file_or_folder_core start base_path={}", &base_path);
     let mut continued = true;
     while let Some(content_object) = content_object_iterator.next()? {
         log::trace!("  detected {:?}", &content_object);
@@ -228,7 +228,7 @@ where
                         }
                         Ok(iter) => {
                             let matcher = PathMatcher::CompleteMatcher;
-                            continued = iterate_file_or_folder(
+                            continued = device_iterate_file_or_folder_core(
                                 device,
                                 iter,
                                 &matcher,
@@ -252,7 +252,7 @@ where
                     }
                     Ok(iter) => {
                         let next_content_object_iterator = iter;
-                        continued = iterate_file_or_folder(
+                        continued = device_iterate_file_or_folder_core(
                             device,
                             next_content_object_iterator,
                             next_matcher.unwrap(),
@@ -269,7 +269,7 @@ where
         }
     }
     log::trace!(
-        "iterate_file_or_folder {} base_path={}",
+        "device_iterate_file_or_folder_core {} base_path={}",
         if continued { "end" } else { "stop" },
         &base_path
     );
