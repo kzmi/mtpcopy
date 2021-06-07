@@ -200,7 +200,7 @@ where
     while let Some(content_object) = content_object_iterator.next()? {
         log::trace!("  detected {:?}", &content_object);
         let content_object_info = device.get_object_info(content_object)?;
-        log::trace!("  dftails {:?}", &content_object_info);
+        log::trace!("  details {:?}", &content_object_info);
         if !content_object_info.is_file() && !content_object_info.is_folder() {
             log::trace!("  --> skip");
             continue;

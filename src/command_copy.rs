@@ -21,6 +21,7 @@ use crate::wpd::utils::init_com;
 use crate::Paths;
 
 pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::error::Error>> {
+    log::trace!("command_copy paths={:?}", paths);
     init_com()?;
     let manager = Manager::get_portable_device_manager()?;
 
@@ -38,6 +39,7 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
     }
 
     let dest_inspection = inspect_path(&manager, dest_path, dest_path_type)?;
+    log::trace!("dest_inspection = {:?}", &dest_inspection);
 
     let dest_base_path: &str;
     let dest_name: Option<&str>;
@@ -187,6 +189,7 @@ enum TargetStatus {
     Folder,
 }
 
+#[derive(Debug)]
 struct TargetInspectionResult {
     target_name: Option<String>,
     target_status: TargetStatus,
@@ -304,18 +307,27 @@ fn find_device_file_or_folder(
     manager: &Manager,
     storage_path: &DeviceStoragePath,
 ) -> Result<Option<(DeviceInfo, Device, ContentObjectInfo)>, Box<dyn std::error::Error>> {
+    log::trace!("find_device_file_or_folder");
     if let Some((device_info, device, storage_object)) = find_device_storage(manager, storage_path)?
     {
+        log::trace!("find_device_file_or_folder: storage found");
         match device_find_file_or_folder(
             &device,
             &device_info,
             &storage_object,
             &storage_path.path,
         )? {
-            Some((content_object_info, _)) => Ok(Some((device_info, device, content_object_info))),
-            None => Ok(None),
+            Some((content_object_info, _)) => {
+                log::trace!("find_device_file_or_folder: file/folder object found");
+                Ok(Some((device_info, device, content_object_info)))
+            },
+            None => {
+                log::trace!("find_device_file_or_folder: no object found");
+                Ok(None)
+            },
         }
     } else {
+        log::trace!("find_device_file_or_folder: storage was not found");
         Ok(None)
     }
 }
@@ -324,6 +336,7 @@ fn find_device_storage(
     manager: &Manager,
     storage_path: &DeviceStoragePath,
 ) -> Result<Option<(DeviceInfo, Device, ContentObjectInfo)>, Box<dyn std::error::Error>> {
+    log::trace!("find_device_storage: storage_path = {:?}", storage_path);
     let mut device_vec = device_find_devices(manager, Some(&storage_path.device_name))?;
     if device_vec.len() == 0 {
         return Err(format!("device was not found: {}", &storage_path.device_name).into());
@@ -359,5 +372,6 @@ fn find_device_storage(
 
     let storage_object = storage_object_vec.pop().unwrap();
 
+    log::trace!("find_device_storage: found {:?} {:?}", &device_info, &storage_object);
     Ok(Some((device_info, device, storage_object)))
 }
