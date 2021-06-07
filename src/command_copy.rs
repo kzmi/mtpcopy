@@ -60,11 +60,11 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
             return Err("destination path is a hidden file or folder.".into());
         }
         TargetStatus::File => {
-            dest_base_path = src_path;
+            dest_base_path = dest_path;
             dest_name = None;
         }
         TargetStatus::Folder => {
-            dest_base_path = src_path;
+            dest_base_path = dest_path;
             dest_name = None;
         }
     }
@@ -290,13 +290,14 @@ fn inspect_device_path_status(
 ) -> Result<TargetStatus, Box<dyn std::error::Error>> {
     match find_device_file_or_folder(manager, storage_path)? {
         Some((_, _, content_object_info)) => {
-            let file_info = FileInfo::from_content_object_info(&content_object_info)?;
-            if file_info.is_hidden || file_info.is_system {
+            if content_object_info.is_hidden || content_object_info.is_system {
                 Ok(TargetStatus::Hidden)
-            } else if file_info.is_folder {
+            } else if content_object_info.is_folder() || content_object_info.is_storage() {
                 Ok(TargetStatus::Folder)
-            } else {
+            } else if content_object_info.is_file() {
                 Ok(TargetStatus::File)
+            } else {
+                Ok(TargetStatus::Hidden)
             }
         }
         None => Ok(TargetStatus::NotExist),

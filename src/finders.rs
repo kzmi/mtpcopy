@@ -1,3 +1,4 @@
+use crate::path::SEPARATORS;
 use crate::wpd::device::ContentObjectInfo;
 use crate::wpd::device::{ContentObjectIterator, Device};
 use crate::wpd::manager::DeviceInfo;
@@ -278,7 +279,9 @@ where
 
 fn join_path(base_path: &str, sub_path: &str) -> String {
     let mut s = String::from(base_path);
-    s.push('\\');
+    if !s.ends_with(SEPARATORS) {
+        s.push('\\');
+    }
     s.push_str(sub_path);
     s
 }
