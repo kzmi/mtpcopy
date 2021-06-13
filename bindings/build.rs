@@ -1,20 +1,5 @@
 fn main() {
     windows::build!(
-        Windows::Win32::System::Com::{
-            CoTaskMemFree,
-        },
-        Windows::Win32::Storage::FileSystem::{
-            CreateFileW,
-            FILE_ATTRIBUTE_NORMAL,
-            FILE_GENERIC_READ,
-            FILE_GENERIC_WRITE,
-            FILE_SHARE_NONE,
-            OPEN_EXISTING,
-        },
-        Windows::Win32::Storage::StructuredStorage::{
-            IStream, STGC_DEFAULT, PROPVARIANT
-        },
-        Windows::Win32::System::SystemServices::{S_OK},
         Windows::Win32::Devices::PortableDevices::{
             IEnumPortableDeviceObjectIDs,
             IPortableDevice,
@@ -31,13 +16,38 @@ fn main() {
             PortableDeviceManager,
             PortableDevicePropVariantCollection,
             PortableDeviceValues,
-            PORTABLE_DEVICE_DELETE_WITH_RECURSION,
+            DELETE_OBJECT_OPTIONS,
         },
-        Windows::Win32::System::WindowsProgramming::{
+        Windows::Win32::Foundation::{
             CloseHandle,
+            BOOL,
+            FILETIME,
+            HANDLE,
+            PWSTR,
+            SYSTEMTIME,
+            S_OK,
+        },
+        Windows::Win32::Storage::FileSystem::{
+            CreateFileW,
             SetFileTime,
+            FILE_FLAGS_AND_ATTRIBUTES,
+            FILE_ACCESS_FLAGS,
+            FILE_SHARE_MODE,
+            FILE_CREATION_DISPOSITION,
+        },
+        Windows::Win32::Storage::StructuredStorage::{
+            IStream,
+            STGC,
+            PROPVARIANT
+        },
+        Windows::Win32::System::Com::{
+            CoTaskMemFree,
+        },
+        Windows::Win32::System::Time::{
             SystemTimeToFileTime,
         },
-        Windows::Win32::System::PropertiesSystem::{PROPERTYKEY},
+        Windows::Win32::System::PropertiesSystem::{
+            PROPERTYKEY,
+        },
     );
 }

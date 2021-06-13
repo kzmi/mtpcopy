@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use bindings::Windows::Win32::Devices::PortableDevices::{
     IPortableDeviceManager, PortableDeviceManager,
 };
-use bindings::Windows::Win32::System::SystemServices::PWSTR;
+use bindings::Windows::Win32::Foundation::PWSTR;
 use windows::Error;
 
 use super::utils::*;

@@ -1,5 +1,5 @@
+use bindings::Windows::Win32::Foundation::PWSTR;
 use bindings::Windows::Win32::System::Com::CoTaskMemFree;
-use bindings::Windows::Win32::System::SystemServices::PWSTR;
 use std::fmt::{Debug, Write};
 
 pub type WChar = u16;

@@ -1,11 +1,10 @@
+use bindings::Windows::Win32::Foundation::{CloseHandle, FILETIME, HANDLE, PWSTR, SYSTEMTIME};
+use bindings::Windows::Win32::Storage::FileSystem::SetFileTime;
 use bindings::Windows::Win32::Storage::FileSystem::{
     CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_NONE,
     OPEN_EXISTING,
 };
-use bindings::Windows::Win32::System::SystemServices::{HANDLE, PWSTR};
-use bindings::Windows::Win32::System::WindowsProgramming::{
-    CloseHandle, SetFileTime, SystemTimeToFileTime, FILETIME, SYSTEMTIME,
-};
+use bindings::Windows::Win32::System::Time::SystemTimeToFileTime;
 use chrono::{Datelike, Local, NaiveDateTime, TimeZone, Timelike, Utc};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
