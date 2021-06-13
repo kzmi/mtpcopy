@@ -41,7 +41,10 @@ impl Manager {
                 .ok()?;
         }
 
-        Ok(DeviceInfoIterator::new(&self.manager, device_ids.to_vec_all()))
+        Ok(DeviceInfoIterator::new(
+            &self.manager,
+            device_ids.to_vec_all(),
+        ))
     }
 }
 

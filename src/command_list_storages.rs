@@ -19,7 +19,10 @@ pub fn command_list_storages() -> Result<(), Box<dyn std::error::Error>> {
             Ok(device) => match device_find_storage_objects(&device, None) {
                 Err(err) => {
                     log::debug!("{}", err);
-                    log::warn!("failed to get storages from \"{}\" (skipped)", device_info.name);
+                    log::warn!(
+                        "failed to get storages from \"{}\" (skipped)",
+                        device_info.name
+                    );
                 }
                 Ok(storage_object_vec) => {
                     for storage_object_info in storage_object_vec {

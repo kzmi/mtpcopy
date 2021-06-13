@@ -319,11 +319,11 @@ fn find_device_file_or_folder(
             Some((content_object_info, _)) => {
                 log::trace!("find_device_file_or_folder: file/folder object found");
                 Ok(Some((device_info, device, content_object_info)))
-            },
+            }
             None => {
                 log::trace!("find_device_file_or_folder: no object found");
                 Ok(None)
-            },
+            }
         }
     } else {
         log::trace!("find_device_file_or_folder: storage was not found");
@@ -371,6 +371,10 @@ fn find_device_storage(
 
     let storage_object = storage_object_vec.pop().unwrap();
 
-    log::trace!("find_device_storage: found {:?} {:?}", &device_info, &storage_object);
+    log::trace!(
+        "find_device_storage: found {:?} {:?}",
+        &device_info,
+        &storage_object
+    );
     Ok(Some((device_info, device, storage_object)))
 }

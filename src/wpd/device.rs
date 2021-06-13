@@ -1,14 +1,15 @@
-use bindings::Windows::Win32::Storage::StructuredStorage::{
-    IStream, PROPVARIANT_0_0_0_abi, PROPVARIANT_0_0_abi, PROPVARIANT, PROPVARIANT_0,
-};
-use bindings::Windows::Win32::System::SystemServices::{BOOL, S_OK};
 use bindings::Windows::Win32::Devices::PortableDevices::{
     IEnumPortableDeviceObjectIDs, IPortableDevice, IPortableDeviceContent,
     IPortableDeviceKeyCollection, IPortableDevicePropVariantCollection, IPortableDeviceProperties,
     IPortableDeviceResources, IPortableDeviceValues, PortableDevice, PortableDeviceKeyCollection,
-    PortableDevicePropVariantCollection, PortableDeviceValues, PORTABLE_DEVICE_DELETE_WITH_RECURSION,
+    PortableDevicePropVariantCollection, PortableDeviceValues,
+    PORTABLE_DEVICE_DELETE_WITH_RECURSION,
+};
+use bindings::Windows::Win32::Storage::StructuredStorage::{
+    IStream, PROPVARIANT_0_0_0_abi, PROPVARIANT_0_0_abi, PROPVARIANT, PROPVARIANT_0,
 };
 use bindings::Windows::Win32::System::PropertiesSystem::PROPERTYKEY;
+use bindings::Windows::Win32::System::SystemServices::{BOOL, S_OK};
 use chrono::format::strftime::StrftimeItems;
 use chrono::format::Parsed;
 use chrono::naive::NaiveDateTime;
