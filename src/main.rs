@@ -41,6 +41,8 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    windows::initialize_mta()?;
+
     let args = parse_args()?;
     match args.command {
         Command::ListStorages => command_list_storages::command_list_storages()?,

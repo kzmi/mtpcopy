@@ -1,7 +1,7 @@
 fn main() {
     windows::build!(
         Windows::Win32::System::Com::{
-            CoInitialize, CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER,
+            CoTaskMemFree,
         },
         Windows::Win32::Storage::FileSystem::{
             CreateFileW,

@@ -20,7 +20,7 @@ pub struct DeviceInfo {
 
 impl Manager {
     pub fn get_portable_device_manager() -> Result<Manager, Error> {
-        let manager: IPortableDeviceManager = co_create_instance(&PortableDeviceManager)?;
+        let manager: IPortableDeviceManager = windows::create_instance(&PortableDeviceManager)?;
         Ok(Manager { manager })
     }
 

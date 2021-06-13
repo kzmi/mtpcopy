@@ -3,7 +3,6 @@ use chrono::NaiveDateTime;
 use crate::wpd::device::ContentObjectInfo;
 use crate::wpd::device::Device;
 use crate::wpd::manager::Manager;
-use crate::wpd::utils::init_com;
 
 use crate::finders::*;
 use crate::path::DeviceStoragePath;
@@ -17,7 +16,6 @@ pub fn command_list_files(
 
     let storage_path = DeviceStoragePath::from(&path)?;
 
-    init_com()?;
     let manager = Manager::get_portable_device_manager()?;
     let device_info_vec = device_find_devices(&manager, Some(&storage_path.device_name))?;
 

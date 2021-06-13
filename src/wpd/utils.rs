@@ -1,33 +1,8 @@
-use bindings::Windows::Win32::System::Com::{CoCreateInstance, CoInitialize, CoTaskMemFree, CLSCTX_INPROC_SERVER};
+use bindings::Windows::Win32::System::Com::CoTaskMemFree;
 use bindings::Windows::Win32::System::SystemServices::PWSTR;
-use std::{
-    fmt::{Debug, Write},
-    sync::atomic::{AtomicBool, Ordering},
-};
-use windows::Error;
-use windows::Guid;
-use windows::Interface;
+use std::fmt::{Debug, Write};
 
 pub type WChar = u16;
-
-static CO_INIT_STATE: AtomicBool = AtomicBool::new(false);
-
-pub fn init_com() -> Result<(), Error> {
-    if CO_INIT_STATE.swap(true, Ordering::Relaxed) == false {
-        log::trace!("CoInitialize");
-        unsafe {
-            CoInitialize(std::ptr::null_mut()).ok()?;
-        }
-    }
-    Ok(())
-}
-
-pub fn co_create_instance<T>(clsid: &Guid) -> Result<T, Error>
-where
-    T: Interface,
-{
-    unsafe { CoCreateInstance(clsid, None, CLSCTX_INPROC_SERVER) }
-}
 
 /// Manages object ID (WCHAR string which ends with a NULL terminator)
 pub struct IDStr {

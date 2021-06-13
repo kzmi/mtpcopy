@@ -17,12 +17,10 @@ use crate::wpd::device::ContentObjectInfo;
 use crate::wpd::device::Device;
 use crate::wpd::manager::DeviceInfo;
 use crate::wpd::manager::Manager;
-use crate::wpd::utils::init_com;
 use crate::Paths;
 
 pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::error::Error>> {
     log::trace!("command_copy paths={:?}", paths);
-    init_com()?;
     let manager = Manager::get_portable_device_manager()?;
 
     let src_path = paths.src.as_str();

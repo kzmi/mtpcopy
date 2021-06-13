@@ -123,8 +123,8 @@ impl Device {
     pub fn open(info: &DeviceInfo) -> Result<Device, Error> {
         log::trace!("open Device ({})", &info.name);
 
-        let device: IPortableDevice = co_create_instance(&PortableDevice)?;
-        let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
+        let device: IPortableDevice = windows::create_instance(&PortableDevice)?;
+        let values: IPortableDeviceValues = windows::create_instance(&PortableDeviceValues)?;
         unsafe {
             device.Open(info.id.clone().as_pwstr(), values).ok()?;
         }
@@ -182,7 +182,7 @@ impl Device {
 
     pub fn get_object_info(&self, object: ContentObject) -> Result<ContentObjectInfo, Error> {
         let key_collection: IPortableDeviceKeyCollection =
-            co_create_instance(&PortableDeviceKeyCollection)?;
+            windows::create_instance(&PortableDeviceKeyCollection)?;
         unsafe {
             key_collection.Add(&WPD_OBJECT_NAME).ok()?;
             key_collection.Add(&WPD_OBJECT_ORIGINAL_FILE_NAME).ok()?;
@@ -386,7 +386,7 @@ impl Device {
         created: &Option<NaiveDateTime>,
         modified: &Option<NaiveDateTime>,
     ) -> Result<ResourceWriter, Error> {
-        let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
+        let values: IPortableDeviceValues = windows::create_instance(&PortableDeviceValues)?;
         let mut name_buf = WStrBuf::from(name, true);
         unsafe {
             values
@@ -451,7 +451,7 @@ impl Device {
         parent: &ContentObject,
         name: &str,
     ) -> Result<ContentObject, Error> {
-        let values: IPortableDeviceValues = co_create_instance(&PortableDeviceValues)?;
+        let values: IPortableDeviceValues = windows::create_instance(&PortableDeviceValues)?;
         let mut name_buf = WStrBuf::from(name, true);
         unsafe {
             values
@@ -481,7 +481,7 @@ impl Device {
 
     pub fn delete(&self, object: &ContentObject) -> Result<(), Error> {
         let collection: IPortableDevicePropVariantCollection =
-            co_create_instance(&PortableDevicePropVariantCollection)?;
+            windows::create_instance(&PortableDevicePropVariantCollection)?;
         let propvar = PROPVARIANT {
             Anonymous: PROPVARIANT_0 {
                 Anonymous: PROPVARIANT_0_0_abi {
