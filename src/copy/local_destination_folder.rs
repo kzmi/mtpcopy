@@ -71,17 +71,25 @@ impl DestinationFolder for LocalDestinationFolder {
         Ok(())
     }
 
-    fn open_or_create_folder(
+    fn open_or_create_folder<FBeforeOpen, FBeforeCreate>(
         &mut self,
         name: &str,
-    ) -> Result<Box<Self>, Box<dyn std::error::Error>> {
+        before_open: FBeforeOpen,
+        before_create: FBeforeCreate,
+    ) -> Result<Box<Self>, Box<dyn std::error::Error>>
+    where
+        FBeforeOpen: FnOnce(&str),
+        FBeforeCreate: FnOnce(&str),
+    {
         let path_buf = Path::new(&self.folder_path).join(name);
 
         if path_buf.exists() {
             if !path_buf.is_dir() {
                 return Err(format!("cannot open a folder: {}", path_buf.to_str().unwrap()).into());
             }
+            before_open(name);
         } else {
+            before_create(name);
             std::fs::create_dir_all(&path_buf)?;
         }
         Ok(Box::new(LocalDestinationFolder::new(path_buf)))
@@ -390,8 +398,16 @@ mod local_destination_folder_tests {
         }
 
         let mut ldf = LocalDestinationFolder::new(PathBuf::from(tempdir.path()));
-        let ldf2 = ldf.open_or_create_folder(&"foo bar".to_string())?;
+        let mut before_open_called = false;
+        let mut before_create_called = false;
+        let ldf2 = ldf.open_or_create_folder(
+            &"foo bar".to_string(),
+            |_name| before_open_called = true,
+            |_name| before_create_called = true,
+        )?;
         assert_eq!(&ldf2.folder_path, &path);
+        assert_eq!(before_open_called, open_existing);
+        assert_eq!(before_create_called, !open_existing);
 
         Ok(())
     }

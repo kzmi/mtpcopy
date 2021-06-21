@@ -8,7 +8,8 @@ use super::file_info::FileInfo;
 use super::local_file_reader::LocalFileReader;
 
 use super::copy_processor::{
-    can_skip_copying, report_copying_end, report_copying_start, CopyProcessor,
+    can_skip_copying, report_copying_end, report_copying_start, report_creating_new_folder,
+    CopyProcessor,
 };
 
 pub struct LocalCopyProcessor {
@@ -88,7 +89,11 @@ fn copy_hierarchy(
         let new_dest_ref;
 
         if dest_is_parent_folder {
-            new_dest = dest.open_or_create_folder(dest_name)?;
+            new_dest = dest.open_or_create_folder(
+                dest_name,
+                |_name| {},
+                |_name| report_creating_new_folder(_name),
+            )?;
             new_dest_ref = new_dest.as_mut();
         } else {
             // if the source object was a folder, and the specified destination

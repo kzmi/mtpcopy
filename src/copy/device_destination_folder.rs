@@ -72,13 +72,20 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
         Ok(())
     }
 
-    fn open_or_create_folder(
+    fn open_or_create_folder<FBeforeOpen, FBeforeCreate>(
         &mut self,
         name: &str,
-    ) -> Result<Box<Self>, Box<dyn std::error::Error>> {
+        before_open: FBeforeOpen,
+        before_create: FBeforeCreate,
+    ) -> Result<Box<Self>, Box<dyn std::error::Error>>
+    where
+        FBeforeOpen: FnOnce(&str),
+        FBeforeCreate: FnOnce(&str),
+    {
         match self.entry_map.get(name) {
             None => {
                 // create
+                before_create(name);
                 let content_object = self
                     .device
                     .create_folder(&self.folder_object_info.content_object, name)?;
@@ -92,6 +99,7 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
             }
             Some(object_info_ref) => {
                 // open
+                before_open(name);
                 Ok(Box::new(DeviceDestinationFolder::new(
                     self.device,
                     object_info_ref.clone(),

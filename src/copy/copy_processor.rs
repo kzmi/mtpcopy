@@ -50,9 +50,13 @@ fn get_file_time(file_info: &FileInfo) -> Option<NaiveDateTime> {
 }
 
 pub fn report_copying_start(src_file_info: &FileInfo) {
-    print!("copying {} ...", src_file_info.name);
+    print!("copying \"{}\" ...", src_file_info.name);
 }
 
 pub fn report_copying_end() {
     println!("");
+}
+
+pub fn report_creating_new_folder(name: &str) {
+    println!("create folder \"{}\"", name);
 }
