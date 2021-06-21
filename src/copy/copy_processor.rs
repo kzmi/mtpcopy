@@ -7,6 +7,7 @@ pub trait CopyProcessor {
         &self,
         name: &str,
         dest: &mut impl DestinationFolder,
+        dest_is_parent_folder: bool,
         recursive: bool,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }

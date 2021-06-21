@@ -39,10 +39,26 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
     let dest_inspection = inspect_path(&manager, dest_path, dest_path_type)?;
     log::trace!("dest_inspection = {:?}", &dest_inspection);
 
+    let dest_is_parent_folder: bool;
+    match dest_inspection.target_status {
+        TargetStatus::NotExist => {
+            dest_is_parent_folder = true;
+        }
+        TargetStatus::Hidden => {
+            return Err("destination path is a hidden file or folder.".into());
+        }
+        TargetStatus::File => {
+            dest_is_parent_folder = true;
+        }
+        TargetStatus::Folder => {
+            dest_is_parent_folder = false;
+        }
+    }
+
     let dest_base_path: &str;
     let dest_name: Option<&str>;
-    match dest_inspection.target_status {
-        TargetStatus::NotExist => match dest_inspection.parent_status {
+    if dest_is_parent_folder {
+        match dest_inspection.parent_status {
             TargetStatus::Folder => {
                 dest_base_path = dest_inspection.parent_path.as_ref().unwrap();
                 dest_name = dest_inspection
@@ -53,18 +69,10 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
             _ => {
                 return Err("cannot create the destination path.".into());
             }
-        },
-        TargetStatus::Hidden => {
-            return Err("destination path is a hidden file or folder.".into());
         }
-        TargetStatus::File => {
-            dest_base_path = dest_path;
-            dest_name = None;
-        }
-        TargetStatus::Folder => {
-            dest_base_path = dest_path;
-            dest_name = None;
-        }
+    } else {
+        dest_base_path = dest_path;
+        dest_name = None;
     }
 
     match dest_path_type {
@@ -80,6 +88,7 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
                     src_path,
                     src_path_type,
                     &mut destination_folder,
+                    dest_is_parent_folder,
                     dest_name,
                     recursive,
                 )
@@ -94,6 +103,7 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
                 src_path,
                 src_path_type,
                 &mut destination_folder,
+                dest_is_parent_folder,
                 dest_name,
                 recursive,
             )
@@ -126,17 +136,15 @@ fn has_wildcard(path: &str, path_type: PathType) -> Result<bool, Box<dyn std::er
     Ok(false)
 }
 
-fn do_copy<D>(
+fn do_copy(
     manager: &Manager,
     src_path: &str,
     src_path_type: PathType,
-    destination_folder: &mut D,
+    destination_folder: &mut impl DestinationFolder,
+    dest_is_parent_folder: bool,
     dest_name: Option<&str>,
     recursive: bool,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    D: DestinationFolder,
-{
+) -> Result<(), Box<dyn std::error::Error>> {
     match src_path_type {
         PathType::DeviceStorage => {
             let storage_path = DeviceStoragePath::from(src_path)?;
@@ -146,7 +154,12 @@ where
             {
                 let processor = DeviceCopyProcessor::new(&device, content_object.clone());
                 let real_dest_name = dest_name.unwrap_or(&content_object.name);
-                processor.copy_as(real_dest_name, destination_folder, recursive)
+                processor.copy_as(
+                    real_dest_name,
+                    destination_folder,
+                    dest_is_parent_folder,
+                    recursive,
+                )
             } else {
                 Err("failed to open source path.".into())
             }
@@ -171,7 +184,12 @@ where
                 }
             }
             let processor = LocalCopyProcessor::new(src_path);
-            processor.copy_as(real_dest_name, destination_folder, recursive)
+            processor.copy_as(
+                real_dest_name,
+                destination_folder,
+                dest_is_parent_folder,
+                recursive,
+            )
         }
         PathType::Invalid => {
             return Err("invalid source path.".into());

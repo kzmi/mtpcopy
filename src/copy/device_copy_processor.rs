@@ -27,11 +27,13 @@ impl<'d> CopyProcessor for DeviceCopyProcessor<'d> {
         &self,
         name: &str,
         dest: &mut impl DestinationFolder,
+        dest_is_parent_folder: bool,
         recursive: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         copy_hierarchy(
             self.device,
             dest,
+            dest_is_parent_folder,
             &self.source_root_object_info,
             name,
             recursive,
@@ -42,6 +44,7 @@ impl<'d> CopyProcessor for DeviceCopyProcessor<'d> {
 fn copy_hierarchy(
     device: &Device,
     dest: &mut impl DestinationFolder,
+    dest_is_parent_folder: bool,
     target_object_info: &ContentObjectInfo,
     dest_name: &str,
     recursive: bool,
@@ -79,7 +82,17 @@ fn copy_hierarchy(
     }
 
     if target_object_info.is_folder() {
-        let mut new_dest = dest.open_or_create_folder(dest_name)?;
+        let mut new_dest;
+        let new_dest_ref;
+
+        if dest_is_parent_folder {
+            new_dest = dest.open_or_create_folder(dest_name)?;
+            new_dest_ref = new_dest.as_mut();
+        } else {
+            // if the source object was a folder, and the specified destination
+            // was an existing folder, use the destination folder as it is.
+            new_dest_ref = dest;
+        }
 
         if recursive {
             let mut iter = device.get_object_iterator(&target_object_info.content_object)?;
@@ -87,7 +100,8 @@ fn copy_hierarchy(
                 let content_object_info = device.get_object_info(content_object)?;
                 copy_hierarchy(
                     device,
-                    new_dest.as_mut(),
+                    new_dest_ref,
+                    true, // dest_is_parent_folder
                     &content_object_info,
                     &content_object_info.name,
                     recursive,

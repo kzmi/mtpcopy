@@ -28,15 +28,17 @@ impl CopyProcessor for LocalCopyProcessor {
         &self,
         name: &str,
         dest: &mut impl DestinationFolder,
+        dest_is_parent_folder: bool,
         recursive: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        copy_hierarchy(&self.path, dest, name, recursive)
+        copy_hierarchy(&self.path, dest, dest_is_parent_folder, name, recursive)
     }
 }
 
 fn copy_hierarchy(
     path: &PathBuf,
     dest: &mut impl DestinationFolder,
+    dest_is_parent_folder: bool,
     dest_name: &str,
     recursive: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -82,14 +84,30 @@ fn copy_hierarchy(
     }
 
     if metadata.is_dir() {
-        let mut new_dest = dest.open_or_create_folder(dest_name)?;
+        let mut new_dest;
+        let new_dest_ref;
+
+        if dest_is_parent_folder {
+            new_dest = dest.open_or_create_folder(dest_name)?;
+            new_dest_ref = new_dest.as_mut();
+        } else {
+            // if the source object was a folder, and the specified destination
+            // was an existing folder, use the destination folder as it is.
+            new_dest_ref = dest;
+        }
 
         if recursive {
             for result in std::fs::read_dir(path)? {
                 let entry = result?;
                 let new_path = entry.path();
                 let dest_file_name = new_path.file_name().unwrap().to_str().unwrap();
-                copy_hierarchy(&new_path, new_dest.as_mut(), dest_file_name, recursive)?;
+                copy_hierarchy(
+                    &new_path,
+                    new_dest_ref,
+                    true, // dest_is_parent_folder
+                    dest_file_name,
+                    recursive,
+                )?;
             }
         }
     }
