@@ -10,30 +10,30 @@ using [Rust for Windows](https://github.com/microsoft/windows-rs).
 ### Copy a local folder to a portable device
 
 ```sh
-mtpcopy copy -R ".\My Music" "My Device:SD Card:\Data"
+mtpcopy copy -R ".\My Music" "My Device:SD Card:\Data\My Music"
 ```
 
 * command: `copy`
 * flags: `-R` (recursive)
 * source path: `.\My Music`
-* destination path: `My Device:SD Card:\Data`
+* destination path: `My Device:SD Card:\Data\My Music`
    * device name: `My Device`
    * storage name: `SD Card`
-   * path on the storage: `\Data`
+   * path on the storage: `\Data\My Music`
 
 ### Copy a folder from a portable device
 
 ```sh
-mtpcopy copy -R "My Device:SD Card:\Data\My Music\Tilt" "D:\My Music"
+mtpcopy copy -R "My Device:SD Card:\Data\My Music" "D:\My Music"
 ```
 
 * command: `copy`
 * flags: `-R` (recursive)
-* source path: `My Device:SD Card:\Data\My Music\Tilt`
+* source path: `My Device:SD Card:\Data\My Music`
    * device name: `My Device`
    * storage name: `SD Card`
-   * path on the storage: `\Data\My Music\Tilt`
-* destination path: `D:\My Music` (`D:\My Music\Tilt` will be created if it doesn't exist)
+   * path on the storage: `\Data\My Music`
+* destination path: `D:\My Music`
 
 ### List portable device storages
 
