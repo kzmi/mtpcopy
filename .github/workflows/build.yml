@@ -1,0 +1,26 @@
+name: build mtpcopy
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Download rustup-init.exe
+        run: curl.exe https://win.rustup.rs/x86_64 --output ..\rustup-init.exe
+      - name: Run rustup-init.exe
+        run: ..\rustup-init.exe -qy --default-toolchain stable-x86_64-pc-windows-msvc
+      - name: Test
+        run: cargo test
+      - name: Build
+        run: cargo build --release
+      - name: Archive files
+        uses: actions/upload-artifact@v2
+        with:
+          name: executable
+          path: |
+            target\release\mtpcopy.exe
+            target\release\mtpcopy.pdb
