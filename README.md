@@ -1,6 +1,6 @@
 # mtpcopy
 
-A Windows CLI tool for copying files from/to a portable device through MTP.
+A Windows CLI tool for copying files from/to a portable device via MTP.
 
 This tool calls [Windows Portable Devices API](https://docs.microsoft.com/en-us/windows/win32/wpd_sdk/wpd-application-programming-interface)
 using [Rust for Windows](https://github.com/microsoft/windows-rs).
@@ -67,3 +67,8 @@ mtpcopy list "*:SD*:\Pictures\202?\**\*.jpg"
    * device name: `*` (all devices)
    * storage name: `SD*` (starts with `SD`)
    * path on the storage: `\Pictures\202?\**\*.jpg` (any jpg files )
+
+### TODOs
+
+* mirror mode
+* unit tests with portable device or mock
