@@ -9,6 +9,7 @@ pub trait CopyProcessor {
         dest: &mut impl DestinationFolder,
         dest_is_parent_folder: bool,
         recursive: bool,
+        mirror: bool,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
@@ -59,4 +60,12 @@ pub fn report_copying_end() {
 
 pub fn report_creating_new_folder(name: &str) {
     println!("create folder \"{}\"", name);
+}
+
+pub fn report_delete_file(name: &str) {
+    println!("delete file \"{}\"", name);
+}
+
+pub fn report_delete_folder(name: &str) {
+    println!("delete folder \"{}\"", name);
 }

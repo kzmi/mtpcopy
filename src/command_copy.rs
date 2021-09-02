@@ -19,7 +19,11 @@ use crate::wpd::manager::DeviceInfo;
 use crate::wpd::manager::Manager;
 use crate::Paths;
 
-pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn command_copy(
+    paths: &Paths,
+    recursive: bool,
+    mirror: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     log::trace!("command_copy paths={:?}", paths);
     let manager = Manager::get_portable_device_manager()?;
 
@@ -91,6 +95,7 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
                     dest_is_parent_folder,
                     dest_name,
                     recursive,
+                    mirror,
                 )
             } else {
                 return Err(format!("filed to open folder: {}", dest_base_path).into());
@@ -106,6 +111,7 @@ pub fn command_copy(paths: &Paths, recursive: bool) -> Result<(), Box<dyn std::e
                 dest_is_parent_folder,
                 dest_name,
                 recursive,
+                mirror,
             )
         }
         PathType::Invalid => Err("invalid destination path.".into()),
@@ -144,6 +150,7 @@ fn do_copy(
     dest_is_parent_folder: bool,
     dest_name: Option<&str>,
     recursive: bool,
+    mirror: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match src_path_type {
         PathType::DeviceStorage => {
@@ -159,6 +166,7 @@ fn do_copy(
                     destination_folder,
                     dest_is_parent_folder,
                     recursive,
+                    mirror,
                 )
             } else {
                 Err("failed to open source path.".into())
@@ -189,6 +197,7 @@ fn do_copy(
                 destination_folder,
                 dest_is_parent_folder,
                 recursive,
+                mirror,
             )
         }
         PathType::Invalid => {

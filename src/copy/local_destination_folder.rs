@@ -6,6 +6,7 @@ use bindings::Windows::Win32::Storage::FileSystem::{
 };
 use bindings::Windows::Win32::System::Time::SystemTimeToFileTime;
 use chrono::{Datelike, Local, NaiveDateTime, TimeZone, Timelike, Utc};
+use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::os::windows::ffi::OsStrExt;
@@ -18,11 +19,16 @@ use super::destination_folder::DestinationFolder;
 
 pub struct LocalDestinationFolder {
     folder_path: PathBuf,
+    retained: HashSet<String>,
 }
 
 impl LocalDestinationFolder {
     pub fn new(folder_path: PathBuf) -> LocalDestinationFolder {
-        LocalDestinationFolder { folder_path }
+        let retained = HashSet::<String>::new();
+        LocalDestinationFolder {
+            folder_path,
+            retained,
+        }
     }
 }
 
@@ -102,6 +108,41 @@ impl DestinationFolder for LocalDestinationFolder {
             std::fs::remove_file(path_buf)?;
         } else if path_buf.is_dir() {
             std::fs::remove_dir_all(path_buf)?;
+        }
+        Ok(())
+    }
+
+    fn retain(&mut self, name: &str) {
+        self.retained.insert(String::from(name));
+    }
+
+    fn delete_unretained<FBeforeDeleteFile, FBeforeDeleteFolder>(
+        &mut self,
+        before_delete_file: FBeforeDeleteFile,
+        before_delete_folder: FBeforeDeleteFolder,
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        FBeforeDeleteFile: Fn(&str),
+        FBeforeDeleteFolder: Fn(&str),
+    {
+        for entry_result in self.folder_path.read_dir()? {
+            let entry = entry_result?;
+            if let Some(name) = entry.file_name().to_str() {
+                let metadata = entry.metadata()?;
+                let file_info = FileInfo::from_metadata(&metadata, name)?;
+
+                if !file_info.is_hidden && !file_info.is_system {
+                    if !self.retained.contains(name) {
+                        if file_info.is_folder {
+                            before_delete_folder(name);
+                        } else {
+                            before_delete_file(name);
+                        }
+
+                        self.delete_file_or_folder(name)?;
+                    }
+                }
+            }
         }
         Ok(())
     }

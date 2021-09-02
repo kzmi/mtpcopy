@@ -28,6 +28,7 @@ struct Args {
     command: Command,
     paths: Option<Paths>,
     recursive: bool,
+    mirror: bool,
     verbose: u32,
 }
 
@@ -53,7 +54,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             args.verbose,
         )?,
 
-        Command::Copy => command_copy::command_copy(&args.paths.unwrap(), args.recursive)?,
+        Command::Copy => {
+            command_copy::command_copy(&args.paths.unwrap(), args.recursive, args.mirror)?
+        }
         _ => {}
     };
     Ok(())
@@ -69,13 +72,19 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
             "recursive",
             "(with \"list\" command or \"copy\" command) process recursively",
         )
+        .optflag(
+            "M",
+            "mirror",
+            "(with \"copy\" command) delete files that do not exist in the source. implies -R.",
+        )
         .optflagmulti("v", "verbose", "verbose output.");
 
     let matches = options.parse(std::env::args().skip(1))?;
 
     let mut help = matches.opt_present("help");
     let version = matches.opt_present("version");
-    let recursive = matches.opt_present("recursive");
+    let mirror = matches.opt_present("mirror");
+    let recursive = matches.opt_present("recursive") | mirror;
     let verbose = matches.opt_count("verbose") as u32;
 
     let mut paths: Option<Paths> = None;
@@ -132,6 +141,7 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
         command,
         paths,
         recursive,
+        mirror,
         verbose,
     })
 }
@@ -140,7 +150,11 @@ fn usage_brief() -> Result<String, std::fmt::Error> {
     let bin_name = env!("CARGO_BIN_NAME");
     let mut s = String::new();
     write!(&mut s, "Usage: {} [-hV]\n", bin_name)?;
-    write!(&mut s, "       {} copy [-R] <source-path> <dest-path>\n", bin_name)?;
+    write!(
+        &mut s,
+        "       {} copy [-RM] <source-path> <dest-path>\n",
+        bin_name
+    )?;
     write!(&mut s, "       {} storages\n", bin_name)?;
     write!(&mut s, "       {} list [-Rv] <path>\n", bin_name)?;
     s.push_str("\n");

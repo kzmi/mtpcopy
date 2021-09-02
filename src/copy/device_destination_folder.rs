@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::wpd::device::{ContentObjectInfo, Device};
 
@@ -12,6 +12,7 @@ pub struct DeviceDestinationFolder<'d> {
     device: &'d Device,
     folder_object_info: ContentObjectInfo,
     entry_map: HashMap<String, ContentObjectInfo>,
+    retained: HashSet<String>,
 }
 
 impl<'d> DeviceDestinationFolder<'d> {
@@ -25,11 +26,13 @@ impl<'d> DeviceDestinationFolder<'d> {
             let object_info = device.get_object_info(object)?;
             entry_map.insert(object_info.name.clone(), object_info);
         }
+        let retained = HashSet::<String>::new();
 
         Ok(DeviceDestinationFolder::<'d> {
             device,
             folder_object_info,
             entry_map,
+            retained,
         })
     }
 }
@@ -114,5 +117,51 @@ impl<'d> DestinationFolder for DeviceDestinationFolder<'d> {
             self.entry_map.remove(name);
         }
         Ok(())
+    }
+
+    fn retain(&mut self, name: &str) {
+        self.retained.insert(String::from(name));
+    }
+
+    fn delete_unretained<FBeforeDeleteFile, FBeforeDeleteFolder>(
+        &mut self,
+        before_delete_file: FBeforeDeleteFile,
+        before_delete_folder: FBeforeDeleteFolder,
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        FBeforeDeleteFile: Fn(&str),
+        FBeforeDeleteFolder: Fn(&str),
+    {
+        let mut delete_error: Option<windows::Error> = None;
+        let mut names_to_delete = Vec::<String>::new();
+        for (name, object_info) in self.entry_map.iter() {
+            if object_info.is_file() || object_info.is_folder() {
+                if !self.retained.contains(name) {
+                    if object_info.is_file() {
+                        before_delete_file(name);
+                    } else if object_info.is_folder() {
+                        before_delete_folder(name);
+                    }
+
+                    if let Err(err) = self.device.delete(&object_info.content_object) {
+                        delete_error = Some(err);
+                        break;
+                    }
+                    // entry_map.remove() is not allowed here because entry_map must be immutable
+                    // as long as `name` and `object_info` refer internal data.
+                    names_to_delete.push(String::from(name));
+                }
+            }
+        }
+
+        for name in names_to_delete.iter() {
+            self.entry_map.remove(name);
+        }
+
+        if delete_error.is_some() {
+            Err(delete_error.unwrap().into())
+        } else {
+            Ok(())
+        }
     }
 }

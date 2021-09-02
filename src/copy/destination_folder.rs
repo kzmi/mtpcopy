@@ -27,4 +27,15 @@ pub trait DestinationFolder {
         FBeforeCreate: FnOnce(&str);
 
     fn delete_file_or_folder(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>>;
+
+    fn retain(&mut self, name: &str);
+
+    fn delete_unretained<FBeforeDeleteFile, FBeforeDeleteFolder>(
+        &mut self,
+        before_delete_file: FBeforeDeleteFile,
+        before_delete_folder: FBeforeDeleteFolder,
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        FBeforeDeleteFile: Fn(&str),
+        FBeforeDeleteFolder: Fn(&str);
 }

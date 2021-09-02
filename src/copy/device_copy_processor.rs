@@ -6,7 +6,7 @@ use super::file_info::FileInfo;
 
 use super::copy_processor::{
     can_skip_copying, report_copying_end, report_copying_start, report_creating_new_folder,
-    CopyProcessor,
+    report_delete_file, report_delete_folder, CopyProcessor,
 };
 
 pub struct DeviceCopyProcessor<'d> {
@@ -30,6 +30,7 @@ impl<'d> CopyProcessor for DeviceCopyProcessor<'d> {
         dest: &mut impl DestinationFolder,
         dest_is_parent_folder: bool,
         recursive: bool,
+        mirror: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         copy_hierarchy(
             self.device,
@@ -38,6 +39,7 @@ impl<'d> CopyProcessor for DeviceCopyProcessor<'d> {
             &self.source_root_object_info,
             name,
             recursive,
+            mirror,
         )
     }
 }
@@ -49,6 +51,7 @@ fn copy_hierarchy(
     target_object_info: &ContentObjectInfo,
     dest_name: &str,
     recursive: bool,
+    mirror: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if target_object_info.is_system || target_object_info.is_hidden {
         return Ok(());
@@ -60,6 +63,7 @@ fn copy_hierarchy(
 
         if let Some(dest_file_info_ref) = dest_file_info.as_ref() {
             if can_skip_copying(&src_file_info, dest_file_info_ref) {
+                dest.retain(dest_name);
                 return Ok(());
             }
         }
@@ -78,7 +82,9 @@ fn copy_hierarchy(
             &target_object_info.time_created,
             &target_object_info.time_modified,
         )?;
+        dest.retain(dest_name);
         report_copying_end();
+
         return Ok(());
     }
 
@@ -87,11 +93,8 @@ fn copy_hierarchy(
         let new_dest_ref;
 
         if dest_is_parent_folder {
-            new_dest = dest.open_or_create_folder(
-                dest_name,
-                |_name| {},
-                |_name| report_creating_new_folder(_name),
-            )?;
+            new_dest = dest.open_or_create_folder(dest_name, |_| {}, report_creating_new_folder)?;
+            dest.retain(dest_name);
             new_dest_ref = new_dest.as_mut();
         } else {
             // if the source object was a folder, and the specified destination
@@ -110,7 +113,12 @@ fn copy_hierarchy(
                     &content_object_info,
                     &content_object_info.name,
                     recursive,
+                    mirror,
                 )?;
+            }
+
+            if mirror {
+                new_dest_ref.delete_unretained(report_delete_file, report_delete_folder)?;
             }
         }
     }
