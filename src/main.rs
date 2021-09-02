@@ -177,7 +177,12 @@ fn usage_brief() -> Result<String, std::fmt::Error> {
 }
 
 fn show_version() {
-    println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let hash_opt = option_env!("COMMIT_HASH");
+    let hash_info = match hash_opt {
+        Some(hash) => format!(" ({})", hash),
+        None => String::new(),
+    };
+    println!("{} {}{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), hash_info);
 }
 
 fn find_command(s: &str) -> Option<Command> {
