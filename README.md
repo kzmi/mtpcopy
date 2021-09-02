@@ -35,6 +35,20 @@ mtpcopy copy -R "My Device:SD Card:\Data\My Music" "D:\My Music"
    * path on the storage: `\Data\My Music`
 * destination path: `D:\My Music`
 
+### Mirror local folder to a portable device
+
+```sh
+mtpcopy copy -M ".\My Music" "My Device:SD Card:\Data\My Music"
+```
+
+* command: `copy`
+* flags: `-M` (mirror)
+* source path: `.\My Music`
+* destination path: `My Device:SD Card:\Data\My Music`
+   * device name: `My Device`
+   * storage name: `SD Card`
+   * path on the storage: `\Data\My Music`
+
 ### List portable device storages
 
 ```sh
@@ -70,5 +84,4 @@ mtpcopy list "*:SD*:\Pictures\202?\**\*.jpg"
 
 ### TODOs
 
-* mirror mode
 * unit tests with portable device or mock
