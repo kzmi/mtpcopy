@@ -16,7 +16,9 @@ jobs:
       - name: Test
         run: cargo test
       - name: Build
-        run: cargo build --release
+        run: |
+          $env:COMMIT_HASH=git rev-parse HEAD
+          cargo build --release
       - name: Archive files
         uses: actions/upload-artifact@v2
         with:
