@@ -1,3 +1,5 @@
+use std::io::{stdout, Write};
+
 use chrono::NaiveDateTime;
 
 use super::{destination_folder::DestinationFolder, file_info::FileInfo};
@@ -52,6 +54,7 @@ fn get_file_time(file_info: &FileInfo) -> Option<NaiveDateTime> {
 
 pub fn report_copying_start(src_file_info: &FileInfo) {
     print!("copying \"{}\" ...", src_file_info.name);
+    stdout().flush().unwrap();
 }
 
 pub fn report_copying_end() {
