@@ -36,7 +36,12 @@ fn main() {
     pretty_env_logger::init();
     let result = run();
     if let Err(err) = result {
-        log::error!("{}", err);
+        if let Some(winerr) = err.downcast_ref::<windows::Error>() {
+            let hresult = winerr.code();
+            log::error!("{} (HRESULT=0x{:08x})", err, hresult.0);
+        } else {
+            log::error!("{}", err);
+        }
         std::process::exit(1);
     }
 }
@@ -182,7 +187,12 @@ fn show_version() {
         Some(hash) => format!(" ({})", hash),
         None => String::new(),
     };
-    println!("{} {}{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), hash_info);
+    println!(
+        "{} {}{}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        hash_info
+    );
 }
 
 fn find_command(s: &str) -> Option<Command> {
